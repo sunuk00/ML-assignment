@@ -1,70 +1,113 @@
-# 이상탐지 과제 데이터셋
+# 데이터 구성
+- train.csv: 10개 채널이 모두 정상 데이터로 구성
+- val.csv, test_public.csv: 정상과 이상 데이터가 섞여 있으며, 라벨이 포함 (정상: 0, 이상: 1)
+- test_hidden_no_labels.csv: 라벨이 없는 최종 제출용 데이터
 
-## 디렉토리 구성
+# 목표
+다변량 시계열 데이터에서 이상탐지를 잘 수행하도록 모델을 학습시키고, validation/test set에서 AUROC, AUPR을 최대화하는 것
 
-```
-project/
-├── starter.py              # 데이터 로드, sliding window helper
-├── data/
-│   ├── train.csv                       # 학습용 (정상만)
-│   ├── val.csv                         # 검증용 (정상+이상, 라벨 포함)
-│   ├── test_public.csv                 # 자체 평가용 (정상+이상, 라벨 포함)
-└── └── test_hidden_no_labels.csv       # 최종 제출용 (라벨 없음)
-```
+# EDA (Exploratory Data Analysis)
+EDA를 통해 각 채널별 속성(연속형/이산형) 파악, 정상 데이터의 Seasonality/Trend 분석, 다변량 채널 간의 상관관계 분석, validation의 이상징후 유형 및 형태 파악 등을 수행하여 모델링에 필요한 인사이트를 얻는 단계
 
-## 데이터 설명
+데이터를 분석하기 전에 결측치를 확인하고, 이를 처리한다. 
 
-- **다변량 시계열**, 일정한 간격으로 샘플링됨
-- 컬럼: `t` (timestep, 정수) + `x_xx` 형식의 채널 10개 + `label` (일부 파일만)
-- 일부 채널은 **연속형**, 일부는 **이산형**입니다. 어느 것이 어느 종류인지는 EDA로 직접 파악하세요.
-- 채널 간에 의존성/상관이 존재할 수 있습니다.
-- 정상 데이터에는 어떤 주기적 패턴이 있을 수 있습니다.
+## Step 1. 채널별 속성 및 스케일 파악(연속형 vs 이산형 분류)
+#### 분석 목적 
+10개 채널의 데이터 분포와 기초 통계량을 분석하여 '연속형 센서 데이터'와 '이산형 상태 데이터'를 명확히 분류하고, 채널 간 스케일(값의 범위) 차이를 정량적으로 파악함.
 
-## 파일별 라벨 정책
+#### 분석 결과
+- `x_06`, `x_92`, `x_4b`: 이산형 채널 (값이 0과 1로만 구성, 각각 80.1%, 79.76%, 70.33%가 0)
+- 나머지 7개 채널: 연속형 채널 (값이 다양한 범위를 가지며, 고유값도 많음)
+- 채널 간 스케일 차이 존재 (예: `x_29`는 최대값이 1100 이상, `x_f8`는 최대값이 25 정도)
 
-| 파일 | 라벨 | 용도 |
-|---|---|---|
-| `train.csv` | 없음 (모두 정상) | 모델 학습 |
-| `val.csv` | 있음 (0=정상, 1=이상) | 하이퍼파라미터 튜닝 |
-| `test_public.csv` | 있음 | 자체 성능 검증 |
-| `test_hidden_no_labels.csv` | 없음 | 최종 제출 (강사 비공개 채점) |
+| channel | n_unique | zero_pct |    min    |     max     |    mean    |    std    |
+|---------|----------|----------|-----------|-------------|------------|-----------|
+| x_3a    | 17906    | 40.316667| 0.000000  | 57.400447   | 10.045609  | 19.935091 | 
+| x_06    | 2        | 80.100000| 0.000000  | 1.000000    | 0.199000   | 0.399255  |
+| x_b1    | 29978    | 0.076667 | -2.955392 | 103.787606  | 75.264274  | 32.188419 |
+| x_7e    | 30000    | 0.000000 | 22.868571 | 83.933976   | 60.491569  | 21.643489 |
+| x_92    | 2        | 79.756667| 0.000000  | 1.000000    | 0.202433   | 0.401820  |
+| x_29    | 19563    | 34.793333| 0.000000  | 1100.041790 | 303.320547 | 458.431818|
+| x_d4    | 19448    | 35.176667| 0.000000  | 50.210546   | 11.951830  | 18.269371 |
+| x_4b    | 2        | 70.333333| 0.000000  | 1.000000    | 0.296667   | 0.456796  |
+| x_5c    | 30000    | 0.000000 | 0.811008  | 1.851938    | 1.147833   | 0.236173  |
+| x_f8    | 30000    | 0.000000 | 20.912449 | 25.283366   | 22.506816  | 1.185510  |
 
-## starter.py
+<img src="assets/eda/step1_channel_properties.png" width="800" height="700">
 
-데이터 로드와 sliding window 변환을 도와주는 helper들이 들어 있습니다.
 
-helper로 제공되는 것:
-- `load_split(name)`: 한 split 로드
-- `make_windows(values, window_size, stride)`: sliding window
-- `make_window_labels(labels, window_size, stride, policy)`: window 단위 라벨
+**인사이트 및 모델 연계**
+1) [전처리 계획] 변수 간 스케일 차이가 거리 기반 모델(K-Means, OC-SVM)의 거리 및 밀도 연산 결과를 지배하는 현상을 방지하기 위해, 분포의 극단성을 보존하면서 표준화하는 StandardScaler 적용 필연성 도출.
 
-직접 작성해야 하는 것:
-- EDA 및 시각화
-- 전처리 (스케일링, 이산/연속 분리, 추가 피처 등)
-- 모델 학습 (예: Isolation Forest, One-Class SVM, LOF, GMM, PCA-based 등 전통 ML)
-- 평가 (AUROC, AUPR — sklearn의 `roc_auc_score`, `average_precision_score`)
-- window-단위 score를 timestep-단위로 환산하는 로직 (sliding window를 쓸 경우)
+2) [모델 구성 계획] (특징 선택 및 모델 매칭 전략)
+    - 전략 A (전체 feature 보존): 10개 채널 전체를 원본 그대로 보존하여, 연속형과 이산형 간의 동기화된 다변량 결합 패턴과 고차원 격리에 강한 트리 기반 모델(Isolation Forest)의 입력으로 주입함.
 
-`starter.py`를 직접 실행하면 (`python starter.py`) 데이터 로드 → sliding window까지의 흐름을 한 번 보여줍니다.
+    - 전략 B (연속형 중심 정제): 이산형 피처를 거리 공간 계산의 노이즈(방해 요인)로 간주하고 필터링하여, 연속형 센서 변수의 순수한 확률 분포 밀도 및 초평면 경계 학습에 집중하는 GMM 및 One-Class SVM 모델에 투입함.
 
-## 평가
 
-- **timestep 단위 AUROC, AUPR** 두 지표로 채점
-- 라벨이 없는 `test_hidden_no_labels.csv`의 각 timestep에 대한 anomaly score를 제출
-- score는 **클수록 이상**으로 간주됩니다
 
-## 제출 형식
+## Step 2. 정상 데이터의 Seasonality/Trend 분석
+#### 분석 목적
+학습 데이터(train.csv)는 정상 데이터만으로 구성되어 있다. 이 데이터들을 대상으로 각 채널의 시계열 특성을 분석하여, 정상 상태가 어떤 패턴으로 움직이는지 파악하고 이후 전처리 및 모델 파라미터 설정의 근거를 마련한다.
 
-`submission.csv` 파일을 다음 형식으로 제출:
+시계열 분해 채널별로 데이터를 분해하여 Trend, Seasonality, Residual로 나누어 분석한다. 이를 통해 각 채널이 주기적인 패턴을 보이는지, 장기적인 추세가 존재하는지, 그리고 패턴과 추세를 제거한 후에도 남는 불규칙한 변동이 있는지를 파악한다.
 
-```
-t,score
-0,0.0123
-1,0.0145
-2,0.0119
-...
-```
+자기 상관(ACF)와 부분 자기 상관(PACF) 분석을 통해 각 채널이 몇 시점 간격으로 반복되는지 파악한다.
+이 주기 정보는 Sliding Window의 Window Size를 결정하는 데 참고할 수 있다.
+예를 들어 ACF분석에서 500 시점 주기가 강하게 나타난다면, 모델이 정상 1 사이클을 온전히 학습할 수 있도록 Window Size를 500으로 설정하는 것을 고려할 수 있다.
 
-- 컬럼은 정확히 `t`, `score` 두 개
-- `t`는 `test_hidden_no_labels.csv`의 `t`와 동일한 timestep
-- `score`는 실수값 (정규화 여부 무관, 상대적 순위만 사용됨)
+
+#### 분석 결과
+강한 Seasonality 채널: `x_3a`, `x_b1`, `x_7e`, `x_29`, `x_d4`, `x_5`, `x_f8` (연속형 채널 전체)
+계절성과 추세가 함께 존재하는 채널: `x_f8`
+ 
+<div style="display: flex; gap: 20px; justify-content: center;">
+    <figure style="margin: 0; text-align: center;">
+        <img src="assets/eda/step2a_seasonal.png" width="500" height="400"/>
+        <figcaption>Seasonality 분석</figcaption>
+    </figure>
+    <figure style="margin: 0; text-align: center;">
+        <img src="assets/eda/step2a_trend.png" width="500" height="400" />
+        <figcaption>Trend 분석</figcaption>
+    </figure>
+        <figure style="margin: 0; text-align: center;">
+        <img src="assets/eda/step2a_residual.png" width="500" height="400" />
+        <figcaption>Residual 분석</figcaption>
+    </figure>
+</div>
+
+
+## Step 3. 다변량 채널 간의 상관관계 분석
+#### 분석 목적
+여러 채널이 서로 어떤 상관관계를 가지는지 파악한다. 채널 간 상관관계를 분석하여, 이상 탐지 시 단일 채널의 변화뿐 아니라 채널 간 관계의 변화도 이상 신호로 활용할 수 있다.
+
+#### 분석 결과
+`x_3a`↔`x_06` : 높은 양의 상관관계 (0.999)
+`x_d4`↔`x_4b` : 높은 양의 상관관계 (0.997)
+`x_4b`↔`x_5c` : 높은 양의 상관관계 (0.966)
+`x_d4`↔`x_5c` : 높은 양의 상관관계 (0.963)
+
+`x_3a`↔`x_7e` : 높은 음의 상관관계 (-0.817)
+`x_06`↔`x_7e` : 높은 음의 상관관계 (-0.817)
+
+<img src="assets/eda/step3a_correlation_matrix.png" width="700" height="800">
+
+## Step 4. validation의 이상징후 유형 및 형태 파악
+- Point Anomaly: 단일 시점의값이 비정상
+- Collective Anomaly: 개별 값은 정상이지만, 일정구간의 패턴이 비정상
+- Contextual Anomaly:값 자체는 정상범위지만, 주어진 맥락에서 비정상 
+
+#### 분석 목적
+validation 데이터(val.csv)에 포함된 이상 데이터의 유형과 형태를 분석하여, 모델이 어떤 종류의 이상을 탐지해야 하는지 명확히 이해한다. 이를 통해 모델링 전략과 평가 기준을 구체화할 수 있다.
+
+
+#### 분석 결과
+| 타입	   | 구간	   |   길이   |
+|---------|----------|----------|
+|	Point |	t=1200, 4500, 8700 | 1~2 step
+ |	Contextual | t=2300, 6100, 11000 |	60~90 step
+|	Collective |	t=9500, 12500, 13800 |	600~800 step
+
+<img src="assets/eda/step4a_anomaly_overview.png" width="800" height="700">
+
+# 전처리 계획
