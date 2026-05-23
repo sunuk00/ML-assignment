@@ -58,7 +58,7 @@ EDA를 통해 각 채널별 속성(연속형/이산형) 파악, 정상 데이터
 
 
 #### 분석 결과
-강한 Seasonality 채널: `x_3a`, `x_b1`, `x_7e`, `x_29`, `x_d4`, `x_5`, `x_f8` (연속형 채널 전체)
+강한 Seasonality 채널: `x_3a`, `x_b1`, `x_7e`, `x_29`, `x_d4`, `x_5`, `x_f8` (연속형 채널 전체)   
 계절성과 추세가 함께 존재하는 채널: `x_f8`
  
 <div style="display: flex; gap: 20px; justify-content: center;">
