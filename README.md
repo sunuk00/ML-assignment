@@ -1,3 +1,4 @@
+```
 project/
 ├── data/
 │   ├── train.csv
@@ -17,7 +18,7 @@ project/
 │   └── 04_final_ensemble.py      # 최종 앙상블 및 hidden 제출 파일 생성 (실험 4)
 ├── starter.py                    # 기존 제공된 기본 코드는 백업 또는 참고용으로 유지
 └── requirements.txt
-
+```
 
 # 계획
 1. 일단 EDA(Exploratory Data Analysis) → 간단한 모델 (예: Isolation Forest) → 평가 → 개선 순으로 진행
