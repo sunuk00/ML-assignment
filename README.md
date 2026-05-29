@@ -1,3 +1,24 @@
+project/
+├── data/
+│   ├── train.csv
+│   ├── val.csv
+│   ├── test_public.csv
+│   └── test_hidden_no_labels.csv
+├── src/                          # 재사용할 핵심 코드를 모아두는 모듈 폴더
+│   ├── __init__.py
+│   ├── preprocessing.py          # 결측치 보간, 전략 A/B 분기, Scaler, PCA 담당
+│   ├── features.py               # 슬라이딩 윈도우 및 통계 Feature 추출 담당
+│   ├── models.py                 # IF, OCSVM, GMM 모델 선언 및 학습 헬퍼
+│   └── ensemble.py               # Rank 정규화 및 가중평균 통합 담당
+├── experiments/                  # 논문 작성 흐름과 1:1 매칭되는 실험 실행 스크립트
+│   ├── 01_baseline.py            # 기본 전처리 + 기본 모델 성능 측정 (실험 1)
+│   ├── 02_feature_ablation.py    # 전략 A vs 전략 B(PCA) 성능 비교 (실험 2)
+│   ├── 03_window_tuning.py       # 윈도우 크기별 민감도 분석 (실험 3)
+│   └── 04_final_ensemble.py      # 최종 앙상블 및 hidden 제출 파일 생성 (실험 4)
+├── starter.py                    # 기존 제공된 기본 코드는 백업 또는 참고용으로 유지
+└── requirements.txt
+
+
 # 계획
 1. 일단 EDA(Exploratory Data Analysis) → 간단한 모델 (예: Isolation Forest) → 평가 → 개선 순으로 진행
 - 채널 분포, 시계열 패털, 채널 간 상관관계
