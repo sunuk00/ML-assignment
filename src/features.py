@@ -63,7 +63,7 @@ def extract_statistical_features(
     pd.DataFrame
         컬럼명 형식: '{채널명}_{통계량종류}'
           예) x_3a_mean, x_7e_std, x_06_ratio, pc_01_skew
-        strategy='A' : (7채널 × 4통계) + (3채널 × 1통계) = 31 컬럼
+        strategy='A' : (7채널 × 6통계) + (3채널 × 1통계) = 45 컬럼
         strategy='B' : (PCA 주성분 수 × 6통계) 컬럼
 
     Raises
@@ -91,10 +91,16 @@ def extract_statistical_features(
         continuous_cols = [c for c in feature_cols if c not in DISCRETE_COLS]
         discrete_cols   = [c for c in feature_cols if c in DISCRETE_COLS]
 
-        # 연속형 채널: 4개 통계량 → 7채널 × 4 = 28 컬럼
+        # 연속형 채널: 6개 통계량 → 7채널 × 6 = 42 컬럼
         feature_parts.extend(
-            _rolling_stats(df, continuous_cols, window_size, ['mean', 'std', 'min', 'max'])
+            _rolling_stats(df, continuous_cols, window_size, ['mean', 'std', 'min', 'max', 'median'])
         )
+
+        # range = max - min (롤링 내 신호 진폭)
+        roller_c = df[continuous_cols].rolling(window=window_size, min_periods=1)
+        range_df = roller_c.max() - roller_c.min()
+        range_df.columns = [f'{col}_range' for col in continuous_cols]
+        feature_parts.append(range_df)
 
         if discrete_cols:
             # 이산형 채널: mean만 추출 (구간 내 활성화 비율) → 3채널 × 1 = 3 컬럼
