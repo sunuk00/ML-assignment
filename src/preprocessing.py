@@ -6,6 +6,11 @@
   - Strategy A : 10개 채널 전체 유지 (스케일링/PCA 미적용)
   - Strategy B : 연속형 7채널 필터링 → StandardScaler → PCA(95% 누적 분산) 적용
   - Data Leakage 방지 : Train은 fit_transform, Val/Test는 transform만 수행
+
+[개선사항]
+  - process_pipeline() 내부에서 handle_missing_values() 자동 호출
+    → 호출 순서 실수로 인한 Data Leakage 위험 제거
+  - 호출부 예시 (모듈 하단 참고)
 """
 
 from __future__ import annotations
@@ -37,6 +42,11 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     -------
     pd.DataFrame
         결측치가 없는 데이터프레임 (원본 인덱스 유지)
+
+    Notes
+    -----
+    process_pipeline()은 내부적으로 이 함수를 자동 호출하므로,
+    외부에서 별도로 호출할 필요가 없습니다.
     """
     if df.isnull().sum().sum() == 0:
         return df.copy()
@@ -55,6 +65,9 @@ def process_pipeline(
 ) -> tuple[pd.DataFrame, StandardScaler | None, PCA | None]:
     """
     전처리 파이프라인을 실행합니다.
+
+    결측치 처리를 내부적으로 자동 수행하므로 외부에서 별도로
+    handle_missing_values()를 호출할 필요가 없습니다.
 
     Parameters
     ----------
@@ -84,21 +97,34 @@ def process_pipeline(
         Val/Test 모드에서 scaler와 pca 중 하나만 None인 경우
     KeyError
         DISCRETE_COLS에 지정된 컬럼이 df에 없는 경우
+
+    Examples
+    --------
+    >>> # Train
+    >>> train_A, _, _          = process_pipeline(train_df, strategy='A')
+    >>> train_B, scaler, pca   = process_pipeline(train_df, strategy='B')
+    >>>
+    >>> # Val / Test — 저장된 scaler, pca 그대로 전달 (Data Leakage 방지)
+    >>> val_B,  _, _ = process_pipeline(val_df,  strategy='B', scaler=scaler, pca=pca)
+    >>> test_B, _, _ = process_pipeline(test_df, strategy='B', scaler=scaler, pca=pca)
     """
     if strategy not in ('A', 'B'):
         raise ValueError(
             f"strategy는 'A' 또는 'B'여야 합니다. 입력값: {strategy!r}"
         )
 
+    # ── 결측치 처리 자동 수행 (호출 순서 실수 방지) ──────────────────────
+    df = handle_missing_values(df)
+
     feature_cols = [c for c in df.columns if c.startswith('x_')]
     if not feature_cols:
         raise ValueError("'x_'로 시작하는 feature 컬럼이 없습니다.")
 
-    # ---------- Strategy A: 전체 채널 그대로 반환 ----------
+    # ── Strategy A: 전체 채널 그대로 반환 ───────────────────────────────
     if strategy == 'A':
         return df[feature_cols].copy(), None, None
 
-    # ---------- Strategy B: 연속형 채널 → StandardScaler → PCA ----------
+    # ── Strategy B: 연속형 채널 → StandardScaler → PCA ──────────────────
 
     missing_cols = [c for c in DISCRETE_COLS if c not in df.columns]
     if missing_cols:
