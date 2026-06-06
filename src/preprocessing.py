@@ -1,18 +1,3 @@
-"""
-전처리 파이프라인 모듈
-
-이 모듈은 다음을 담당합니다:
-  - 결측치 처리 (선형 보간 + bfill/ffill)
-  - Strategy A : 10개 채널 전체 유지 (스케일링/PCA 미적용)
-  - Strategy B : 연속형 7채널 필터링 → StandardScaler → PCA(95% 누적 분산) 적용
-  - Data Leakage 방지 : Train은 fit_transform, Val/Test는 transform만 수행
-
-[개선사항]
-  - process_pipeline() 내부에서 handle_missing_values() 자동 호출
-    → 호출 순서 실수로 인한 Data Leakage 위험 제거
-  - 호출부 예시 (모듈 하단 참고)
-"""
-
 from __future__ import annotations
 
 import pandas as pd
@@ -20,144 +5,112 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 
-# 이산형(Discrete) 채널 이름 목록
-# 실제 데이터에서 확인된 이진(binary) 채널 3개
-# 데이터셋이 변경될 경우 이 리스트만 수정하면 됩니다
+# EDA에서 확인된 이산형(바이너리) 채널 3개
 DISCRETE_COLS: list[str] = ['x_06', 'x_92', 'x_4b']
 
 
-def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+def fill_missing(df: pd.DataFrame) -> pd.DataFrame:
     """
-    시계열 결측치를 선형 보간법으로 처리합니다.
+    결측치를 선형 보간으로 처리합니다.
 
-    선형 보간 후 앞/뒤에 남는 결측치는 bfill → ffill 순서로 제거합니다.
-    시계열의 시간적 의존성을 보존하기 위해 linear 방식을 사용합니다.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        원본 데이터프레임
-
-    Returns
-    -------
-    pd.DataFrame
-        결측치가 없는 데이터프레임 (원본 인덱스 유지)
-
-    Notes
-    -----
-    process_pipeline()은 내부적으로 이 함수를 자동 호출하므로,
-    외부에서 별도로 호출할 필요가 없습니다.
-    """
-    if df.isnull().sum().sum() == 0:
-        return df.copy()
-
-    result = df.copy()
-    result = result.interpolate(method='linear')
-    result = result.bfill().ffill()
-    return result
-
-
-def process_pipeline(
-    df: pd.DataFrame,
-    strategy: str = 'A',
-    scaler: StandardScaler | None = None,
-    pca: PCA | None = None,
-) -> tuple[pd.DataFrame, StandardScaler | None, PCA | None]:
-    """
-    전처리 파이프라인을 실행합니다.
-
-    결측치 처리를 내부적으로 자동 수행하므로 외부에서 별도로
-    handle_missing_values()를 호출할 필요가 없습니다.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        feature 컬럼만 포함된 데이터프레임 (t, label 컬럼 제외 권장)
-    strategy : str, default 'A'
-        'A': 10개 채널 전체 유지, 스케일링/PCA 미적용
-        'B': 연속형 7채널 필터링 → StandardScaler → PCA(95%) 적용
-    scaler : StandardScaler or None
-        None이면 Train 모드(fit_transform), 전달되면 Val/Test 모드(transform only)
-    pca : PCA or None
-        None이면 Train 모드(fit_transform), 전달되면 Val/Test 모드(transform only)
-
-    Returns
-    -------
-    processed_df : pd.DataFrame
-        변환된 데이터프레임
-    scaler : StandardScaler or None
-        Strategy B에서 학습된 스케일러 객체 (A면 None)
-    pca : PCA or None
-        Strategy B에서 학습된 PCA 객체 (A면 None)
-
-    Raises
-    ------
-    ValueError
-        strategy가 'A' 또는 'B'가 아닌 경우
-        Val/Test 모드에서 scaler와 pca 중 하나만 None인 경우
-    KeyError
-        DISCRETE_COLS에 지정된 컬럼이 df에 없는 경우
+    보간 후 앞/뒤에 남는 결측치는 bfill → ffill 순서로 제거합니다.
+    결측치가 없으면 복사본만 반환합니다.
 
     Examples
     --------
-    >>> # Train
-    >>> train_A, _, _          = process_pipeline(train_df, strategy='A')
-    >>> train_B, scaler, pca   = process_pipeline(train_df, strategy='B')
-    >>>
-    >>> # Val / Test — 저장된 scaler, pca 그대로 전달 (Data Leakage 방지)
-    >>> val_B,  _, _ = process_pipeline(val_df,  strategy='B', scaler=scaler, pca=pca)
-    >>> test_B, _, _ = process_pipeline(test_df, strategy='B', scaler=scaler, pca=pca)
+    >>> train_df = fill_missing(train_df)
+    >>> val_df   = fill_missing(val_df)
     """
-    if strategy not in ('A', 'B'):
-        raise ValueError(
-            f"strategy는 'A' 또는 'B'여야 합니다. 입력값: {strategy!r}"
-        )
+    if df.isnull().sum().sum() == 0:
+        return df.copy()
+    return df.copy().interpolate(method='linear').bfill().ffill()
 
-    # ── 결측치 처리 자동 수행 (호출 순서 실수 방지) ──────────────────────
-    df = handle_missing_values(df)
 
+def filter_continuous(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    이산형 채널(DISCRETE_COLS)을 제거하고 연속형 채널만 반환합니다.
+
+    Strategy B 전처리의 첫 번째 단계입니다.
+    Strategy A는 이 함수를 건너뛰고 전체 채널을 그대로 사용합니다.
+
+    Examples
+    --------
+    >>> train_cont = filter_continuous(train_df)   # x_06, x_92, x_4b 제거
+    """
     feature_cols = [c for c in df.columns if c.startswith('x_')]
-    if not feature_cols:
-        raise ValueError("'x_'로 시작하는 feature 컬럼이 없습니다.")
-
-    # ── Strategy A: 전체 채널 그대로 반환 ───────────────────────────────
-    if strategy == 'A':
-        return df[feature_cols].copy(), None, None
-
-    # ── Strategy B: 연속형 채널 → StandardScaler → PCA ──────────────────
-
-    missing_cols = [c for c in DISCRETE_COLS if c not in df.columns]
-    if missing_cols:
-        raise KeyError(
-            f"DISCRETE_COLS에 지정된 컬럼이 데이터프레임에 없습니다: {missing_cols}"
-        )
-
-    # scaler와 pca의 None 여부가 불일치하면 사용자 실수 가능성이 높으므로 오류 처리
-    if (scaler is None) != (pca is None):
-        raise ValueError(
-            "scaler와 pca는 둘 다 None(Train 모드)이거나 "
-            "둘 다 객체(Val/Test 모드)여야 합니다."
-        )
-
     continuous_cols = [c for c in feature_cols if c not in DISCRETE_COLS]
-    X = df[continuous_cols].values  # shape: (T, 7)
+    return df[continuous_cols].copy()
 
-    is_train = scaler is None
 
-    if is_train:
-        # Train: fit_transform — scaler/pca를 새로 학습
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
+def fit_scaler(df: pd.DataFrame) -> StandardScaler:
+    """
+    학습 데이터로 StandardScaler를 fit하고 반환합니다.
 
-        pca = PCA(n_components=0.95, random_state=42)
-        X_pca = pca.fit_transform(X_scaled)
-    else:
-        # Val/Test: transform only — Data Leakage 방지
-        X_scaled = scaler.transform(X)
-        X_pca = pca.transform(X_scaled)
+    반드시 train 데이터로만 fit하세요. Val/Test에는 apply_scaler를 사용합니다.
+    (train으로 fit한 scaler를 val/test에도 동일하게 적용 → Data Leakage 방지)
 
-    n_components = X_pca.shape[1]
-    pca_cols = [f'pc_{i + 1:02d}' for i in range(n_components)]
-    processed_df = pd.DataFrame(X_pca, index=df.index, columns=pca_cols)
+    Examples
+    --------
+    >>> scaler = fit_scaler(train_cont)
+    """
+    scaler = StandardScaler()
+    scaler.fit(df.values)
+    return scaler
 
-    return processed_df, scaler, pca
+
+def apply_scaler(scaler: StandardScaler, df: pd.DataFrame) -> pd.DataFrame:
+    """
+    fit된 StandardScaler로 데이터를 transform합니다.
+
+    train, val, test 모두 동일한 scaler 객체를 사용해야 합니다.
+
+    Examples
+    --------
+    >>> train_scaled = apply_scaler(scaler, train_cont)
+    >>> val_scaled   = apply_scaler(scaler, val_cont)   # 같은 scaler!
+    """
+    scaled = scaler.transform(df.values)
+    return pd.DataFrame(scaled, index=df.index, columns=df.columns)
+
+
+def fit_pca(
+    df: pd.DataFrame,
+    variance: float = 0.95,
+    random_state: int = 42,
+) -> PCA:
+    """
+    학습 데이터로 PCA를 fit하고 반환합니다.
+
+    Parameters
+    ----------
+    df       : apply_scaler()의 출력 DataFrame
+    variance : 유지할 누적 분산 비율 (기본 95% → 주성분 수 자동 결정)
+
+    반드시 train 데이터로만 fit하세요.
+
+    Examples
+    --------
+    >>> pca = fit_pca(train_scaled)
+    >>> print(f"주성분 수: {pca.n_components_}")
+    """
+    pca = PCA(n_components=variance, random_state=random_state)
+    pca.fit(df.values)
+    return pca
+
+
+def apply_pca(pca: PCA, df: pd.DataFrame) -> pd.DataFrame:
+    """
+    fit된 PCA로 데이터를 transform합니다.
+
+    컬럼명은 pc_01, pc_02, ... 형식으로 자동 부여됩니다.
+    train, val, test 모두 동일한 pca 객체를 사용해야 합니다.
+
+    Examples
+    --------
+    >>> train_pca = apply_pca(pca, train_scaled)
+    >>> val_pca   = apply_pca(pca, val_scaled)    # 같은 pca!
+    """
+    transformed = pca.transform(df.values)
+    n = transformed.shape[1]
+    cols = [f'pc_{i + 1:02d}' for i in range(n)]
+    return pd.DataFrame(transformed, index=df.index, columns=cols)

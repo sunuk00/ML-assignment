@@ -1,1 +1,18 @@
 __pycache__/
+*.py[cod]
+*.pyo
+
+# 실험 로그 및 결과물
+experiments/logs/
+experiments/.trash/
+results/202302904_*.csv
+
+# EDA 출력 이미지
+# eda/outputs/
+
+# 모델 파일
+*.pkl
+*.joblib
+
+# 데이터 (용량 크고 공유 불필요)
+# data/

@@ -193,7 +193,7 @@ def step1_channel_properties(df):
         fontsize=13, fontweight="bold", y=1.002,
     )
 
-    out_path = "step1_channel_properties.png"
+    out_path = "./eda/outputs/step1_channel_properties.png"
     plt.savefig(out_path, dpi=150, bbox_inches="tight")
     print(f"  Saved: {out_path}")
     plt.show()
@@ -273,10 +273,10 @@ def _plot_step2_decomposition(df, continuous_chs, decomp_map, metrics):
         "residual": "Residual (잔차)",
     }
     out_files  = {
-        "observed": "step2a_observed.png",
-        "trend":    "step2a_trend.png",
-        "seasonal": "step2a_seasonal.png",
-        "residual": "step2a_residual.png",
+        "observed": "./eda/outputs/step2a_observed.png",
+        "trend":    "./eda/outputs/step2a_trend.png",
+        "seasonal": "./eda/outputs/step2a_seasonal.png",
+        "residual": "./eda/outputs/step2a_residual.png",
     }
     cls_colors = {"강한 주기성": "#2E8B57", "Trend 위주": "#E05A2B", "복합": "#888888"}
 
@@ -408,7 +408,7 @@ def _plot_step2_acf_pacf(df, continuous_chs, metrics):
         "Step 2-B.  ACF / PACF  —  train.csv  |  연속형 채널",
         fontsize=13, fontweight="bold", y=1.002,
     )
-    out = "step2b_acf_pacf.png"
+    out = "./eda/outputs/step2b_acf_pacf.png"
     plt.savefig(out, dpi=150, bbox_inches="tight")
     print(f"  Saved: {out}")
     plt.show()
@@ -565,7 +565,7 @@ def _plot_step3_heatmap(corr_ordered, ordered_chs, classification, metrics):
                  "(계층적 클러스터링 순 정렬  |  [P]=주기성  [T]=Trend  [D]=이산  [C]=복합)",
                  fontsize=12, fontweight="bold")
 
-    out = "step3a_correlation_matrix.png"
+    out = "./eda/outputs/step3a_correlation_matrix.png"
     plt.savefig(out, dpi=150, bbox_inches="tight")
     print(f"  Saved: {out}")
     plt.show()
@@ -635,7 +635,7 @@ def _plot_step3_crosscorr(df, channels, corr, n_lags=600, threshold=0.5, max_pai
         f"Step 3-B.  Cross-Correlation Function  —  train.csv  (|r| >= {threshold})",
         fontsize=13, fontweight="bold", y=1.002,
     )
-    out = "step3b_cross_correlation.png"
+    out = "./eda/outputs/step3b_cross_correlation.png"
     plt.savefig(out, dpi=150, bbox_inches="tight")
     print(f"  Saved: {out}")
     plt.show()
@@ -784,7 +784,7 @@ def _plot_step4_overview(val_df, channels, classification, segs):
         f"Step 4-A.  Anomaly Overview  —  val.csv  |  {len(val_df):,} timesteps",
         fontsize=13, fontweight="bold", y=1.002,
     )
-    out = "step4a_anomaly_overview.png"
+    out = "./eda/outputs/step4a_anomaly_overview.png"
     plt.savefig(out, dpi=150, bbox_inches="tight")
     print(f"  Saved: {out}")
     plt.show()
@@ -796,9 +796,9 @@ def _plot_step4_zoom(val_df, channels, classification, segs, context=300):
     t    = val_df["t"].values
     n_ch = len(channels)
     type_info = {
-        "Point":      ("Step 4-B.  Point Anomaly (튀는 값)",           "step4b_point_anomaly.png"),
-        "Contextual": ("Step 4-B.  Contextual Anomaly (맥락적 이상)",   "step4b_contextual_anomaly.png"),
-        "Collective": ("Step 4-B.  Collective Anomaly (구간 패턴 이상)", "step4b_collective_anomaly.png"),
+        "Point":      ("Step 4-B.  Point Anomaly (튀는 값)",           "./eda/outputs/step4b_point_anomaly.png"),
+        "Contextual": ("Step 4-B.  Contextual Anomaly (맥락적 이상)",   "./eda/outputs/step4b_contextual_anomaly.png"),
+        "Collective": ("Step 4-B.  Collective Anomaly (구간 패턴 이상)", "./eda/outputs/step4b_collective_anomaly.png"),
     }
 
     for anom_type, (title, out) in type_info.items():
