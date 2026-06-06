@@ -1,23 +1,8 @@
-"""실험 004: IF — Rolling 통계 + 연속/이산 분리
-
-연속형 채널(7개)에만 rolling(w=500) 통계 피처를 적용하고,
-이산형 채널(3개)은 원본값을 그대로 사용합니다.
-결측치 선형 보간 적용.
-피처 차원: 연속형 7채널 × 5통계 + 이산형 3채널 = 38
+"""실험 009: IF — Raw(10채널) + 007의 통계 피처 하이브리드
+현재 시점의 원본 10개 채널을 그대로 사용하고, 007에서 만든 rolling 통계(연속)과
+이산 윈도우 비율을 옆으로 concat 하여 하나의 피처 행렬로 IF에 입력합니다.
 
 결과 (기록):
-  val  AUROC=0.6932  AUPR=0.2822
-  test AUROC=0.6475  AUPR=0.1917
-
-  [Val] 유형별 AUPR
-  Point      0.0008
-  Contextual 0.0256
-  Collective 0.2718
-
-  [Test] 유형별 AUPR
-  Point      0.0010
-  Contextual 0.0505
-  Collective 0.1662
 """
 
 from __future__ import annotations
@@ -41,9 +26,9 @@ from src.evaluate      import evaluate_aupr, evaluate_auroc, anomaly_type_aupr, 
 DATA_DIR   = ROOT_DIR / "data"
 OUTPUT_DIR = ROOT_DIR / "experiments" / "isolation_forest" / "outputs"
 
-WINDOW_SIZE   = 3
-CONT_STATS    = ['mean', 'std', 'min', 'max', 'range']
-N_ESTIMATORS  = 500
+WINDOW_SIZE   = 50
+STATS         = ['mean', 'std', 'min', 'max', 'range']
+N_ESTIMATORS  = 300
 CONTAMINATION = 0.0001
 RANDOM_STATE  = 42
 POINT_LEN      = (1,   5)
@@ -51,20 +36,9 @@ CONTEXTUAL_LEN = (6,   200)
 COLLECTIVE_LEN = (201, 10**9)
 
 
-def minmax(arr):
-    lo, hi = arr.min(), arr.max()
-    return (arr - lo) / (hi - lo) if hi > lo else np.zeros_like(arr)
-
-
-def _build_features(df: pd.DataFrame, cont_cols: list[str], disc_cols: list[str]) -> np.ndarray:
-    cont = rolling_features(df, cols=cont_cols, window_size=WINDOW_SIZE, stats=CONT_STATS)
-    disc = df[disc_cols].reset_index(drop=True)
-    return pd.concat([cont, disc], axis=1).to_numpy()
-
-
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print("=== 004 IF — Rolling(w=500) + Separated ===\n")
+    print("=== 009 IF — Raw + Rolling Hybrid ===\n")
 
     # 1. 데이터 로드
     train_df, _           = load_data("train",       str(DATA_DIR))
@@ -77,31 +51,40 @@ if __name__ == "__main__":
     val_df   = fill_missing(val_df)
     test_df  = fill_missing(test_df)
 
-    # 3. 연속/이산 분리
-    x_cols    = [c for c in train_df.columns if c.startswith("x_")]
-    cont_cols = [c for c in x_cols if c not in DISCRETE_COLS]
+    # 3. 채널 분리
+    x_cols = [c for c in train_df.columns if c.startswith("x_")]
     disc_cols = [c for c in x_cols if c in DISCRETE_COLS]
-    print(f"  연속형: {len(cont_cols)}채널  이산형: {len(disc_cols)}채널")
+    cont_cols = [c for c in x_cols if c not in DISCRETE_COLS]
 
-    # 4. 피처 추출 (연속형: rolling 통계, 이산형: 원본값)
-    train_X = _build_features(train_df, cont_cols, disc_cols)
-    val_X   = _build_features(val_df,   cont_cols, disc_cols)
-    test_X  = _build_features(test_df,  cont_cols, disc_cols)
-    print(f"  feature dim: {train_X.shape[1]}  ({len(cont_cols)} cont×{len(CONT_STATS)} + {len(disc_cols)} disc)")
+    # 4. 원본 raw 값 (현재 시점)
+    train_raw = train_df[x_cols].to_numpy()
+    val_raw   = val_df[x_cols].to_numpy()
+    test_raw  = test_df[x_cols].to_numpy()
 
-    # 5. 모델 학습
+    # 5. 007 스타일의 통계 피처
+    train_cont = rolling_features(train_df, cols=cont_cols, window_size=WINDOW_SIZE, stats=STATS)
+    val_cont   = rolling_features(val_df,   cols=cont_cols, window_size=WINDOW_SIZE, stats=STATS)
+    test_cont  = rolling_features(test_df,  cols=cont_cols, window_size=WINDOW_SIZE, stats=STATS)
+
+    train_disc = train_df[disc_cols].rolling(WINDOW_SIZE, min_periods=1).mean().fillna(0)
+    val_disc   = val_df[disc_cols].rolling(WINDOW_SIZE, min_periods=1).mean().fillna(0)
+    test_disc  = test_df[disc_cols].rolling(WINDOW_SIZE, min_periods=1).mean().fillna(0)
+
+    # 6. concat: raw(10) || cont rolling stats || disc ratio
+    train_X = np.hstack([train_raw, train_cont.to_numpy(), train_disc[disc_cols].to_numpy()])
+    val_X   = np.hstack([val_raw,   val_cont.to_numpy(),   val_disc[disc_cols].to_numpy()])
+    test_X  = np.hstack([test_raw,  test_cont.to_numpy(),  test_disc[disc_cols].to_numpy()])
+    print(f"  feature dim: {train_X.shape[1]}  (raw {train_raw.shape[1]} + cont {train_cont.shape[1]} + disc {len(disc_cols)})")
+
+    # 7. 모델 학습
     model = fit_isolation_forest(train_X, n_estimators=N_ESTIMATORS,
                                   contamination=CONTAMINATION, random_state=RANDOM_STATE)
 
-    # 6. Score 계산
+    # 8. Score 계산
     val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
     test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
 
-    # min-max 정규화 버전 (LOF는 이상치 점수가 클수록 정상에 가깝기 때문에 flip_score → -score_samples)
-    # val_scores  = minmax(-model.score_samples(val_X))
-    # test_scores = minmax(-model.score_samples(test_X))
-
-    # 7. 평가
+    # 9. 평가
     print(f"\n  val  AUROC={evaluate_auroc(val_scores, val_labels):.4f}  AUPR={evaluate_aupr(val_scores, val_labels):.4f}")
     print(f"  test AUROC={evaluate_auroc(test_scores, test_labels):.4f}  AUPR={evaluate_aupr(test_scores, test_labels):.4f}")
     print(f"\n  [Val] 유형별 AUPR")
@@ -113,10 +96,10 @@ if __name__ == "__main__":
     print(f"  Contextual {anomaly_type_aupr(test_scores, test_labels, *CONTEXTUAL_LEN):.4f}")
     print(f"  Collective {anomaly_type_aupr(test_scores, test_labels, *COLLECTIVE_LEN):.4f}")
 
-    # 8. 시각화
+    # 10. 시각화
     plot_full(val_scores, val_labels, test_scores, test_labels,
-              tag="004_rolling_w500_separated", save_path=str(OUTPUT_DIR / "004_val_score_trace.png"))
+              tag="009_raw_plus_rolling_hybrid", save_path=str(OUTPUT_DIR / "009_val_score_trace.png"))
     plot_zooms(val_scores, val_labels, test_scores, test_labels,
-               tag="004_rolling_w500_separated", save_path=str(OUTPUT_DIR / "004_val_score_zoom.png"))
+               tag="009_raw_plus_rolling_hybrid", save_path=str(OUTPUT_DIR / "009_val_score_zoom.png"))
     plot_score_hist(val_scores, val_labels, test_scores, test_labels,
-                    tag="004_rolling_separated", save_path=str(OUTPUT_DIR / "004_score_hist.png"))
+                    tag="009_raw_plus_rolling_hybrid", save_path=str(OUTPUT_DIR / "009_score_hist.png"))
