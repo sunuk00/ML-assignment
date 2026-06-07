@@ -43,6 +43,10 @@ POINT_LEN      = (1,   5)
 CONTEXTUAL_LEN = (6,   200)
 COLLECTIVE_LEN = (201, 10**9)
 
+def minmax(arr):
+    lo, hi = arr.min(), arr.max()
+    return (arr - lo) / (hi - lo) if hi > lo else np.zeros_like(arr)
+
 
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -89,8 +93,12 @@ if __name__ == "__main__":
     model = fit_ocsvm(train_X, kernel=KERNEL, nu=NU, gamma=GAMMA)
 
     # 8. Score 계산 (decision_function → 작을수록 이상 → flip)
-    val_scores  = rank_normalize(flip_score(model.decision_function(val_X)))
-    test_scores = rank_normalize(flip_score(model.decision_function(test_X)))
+    # val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
+    # test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
+
+    # # min-max 정규화 버전 (LOF는 이상치 점수가 클수록 정상에 가깝기 때문에 flip_score → -score_samples)
+    val_scores  = minmax(-model.score_samples(val_X))
+    test_scores = minmax(-model.score_samples(test_X))
 
     # 9. 평가
     print(f"\n  val  AUROC={evaluate_auroc(val_scores, val_labels):.4f}  AUPR={evaluate_aupr(val_scores, val_labels):.4f}")

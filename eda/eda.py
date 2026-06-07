@@ -891,6 +891,137 @@ def step4_anomaly_analysis(val_df):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Step 5. Rolling Mean (이동 평균) 시각화
+# ──────────────────────────────────────────────────────────────────────────────
+
+def step5_rolling_mean(df, window_sizes=(30, 200), label_col="label"):
+    """
+    각 연속형 채널의 원본 신호 위에 rolling mean을 오버레이합니다.
+
+    Parameters
+    ----------
+    df           : 시각화할 DataFrame (train 또는 val)
+    window_sizes : 표시할 윈도우 크기 목록 (기본: 30, 200)
+    label_col    : val 데이터의 경우 이상치 레이블 컬럼명 (없으면 None)
+
+    저장 파일:
+      eda/outputs/step5_rolling_mean_w{W}.png — 윈도우 크기별 1장씩
+    """
+    classification = classify_channels(df)
+    all_chs        = get_channels(df)
+    channels       = [c for c in all_chs if c != label_col and classification.get(c) == "continuous"]
+
+    has_label = label_col in df.columns
+    segs      = _get_anomaly_segments(df[label_col].values) if has_label else []
+
+    print("=" * 60)
+    print("Step 5. Rolling Mean Visualization")
+    print("=" * 60)
+    print(f"  연속형 채널: {channels}")
+    print(f"  윈도우 크기: {list(window_sizes)}\n")
+
+    ROLL_COLORS = ["#E05A2B", "#2E8B57", "#9B59B6", "#F39C12"]
+    t = df["t"].values if "t" in df.columns else np.arange(len(df))
+
+    for W in window_sizes:
+        n_ch = len(channels)
+        fig, axes = plt.subplots(
+            n_ch, 1, sharex=True,
+            figsize=(18, 2.2 * n_ch),
+            gridspec_kw={"hspace": 0.15},
+        )
+        if n_ch == 1:
+            axes = [axes]
+
+        for i, ch in enumerate(channels):
+            ax     = axes[i]
+            values = df[ch].values
+            rm     = pd.Series(values).rolling(window=W, min_periods=1).mean().to_numpy()
+
+            # 원본 신호 (연한 배경)
+            ax.plot(t, values, color=COLORS["continuous"], lw=0.5, alpha=0.4, label="원본")
+            # rolling mean 오버레이
+            ax.plot(t, rm, color=ROLL_COLORS[0], lw=1.2, alpha=0.9, label=f"Rolling Mean (W={W})")
+
+            # 이상 구간 표시 (val 데이터일 경우)
+            if segs:
+                _draw_anomaly_overlays(ax, segs, t)
+
+            ax.set_ylabel(ch, rotation=0, ha="right", va="center",
+                          fontsize=10, fontweight="bold", color=COLORS["continuous"])
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.set_facecolor("#f5f8ff")
+            ax.tick_params(labelsize=8)
+            if i == 0:
+                ax.legend(fontsize=8, loc="upper right")
+            if i < n_ch - 1:
+                ax.tick_params(labelbottom=False)
+
+        axes[-1].set_xlabel("t (timestep)", fontsize=11)
+        split = "val" if has_label else "train"
+        fig.suptitle(
+            f"Step 5.  Rolling Mean (W={W})  —  {split}.csv  |  {len(df):,} timesteps",
+            fontsize=13, fontweight="bold", y=1.002,
+        )
+
+        out = f"./eda/outputs/step5_rolling_mean_w{W}.png"
+        plt.savefig(out, dpi=150, bbox_inches="tight")
+        print(f"  Saved: {out}")
+        plt.show()
+        plt.close(fig)
+
+
+def step5_rolling_mean_compare(df, channel, window_sizes=(30, 200), label_col="label"):
+    """
+    단일 채널에 대해 여러 윈도우 크기의 rolling mean을 한 장에 비교합니다.
+
+    Parameters
+    ----------
+    df           : 시각화할 DataFrame
+    channel      : 비교할 채널명 (예: 'x_f8')
+    window_sizes : 비교할 윈도우 크기 목록
+    label_col    : 이상치 레이블 컬럼명 (없으면 None)
+    """
+    has_label = label_col in df.columns
+    segs      = _get_anomaly_segments(df[label_col].values) if has_label else []
+    t         = df["t"].values if "t" in df.columns else np.arange(len(df))
+    values    = df[channel].values
+
+    ROLL_COLORS = ["#E05A2B", "#2E8B57", "#9B59B6", "#F39C12"]
+
+    fig, ax = plt.subplots(figsize=(18, 4))
+    ax.plot(t, values, color=COLORS["continuous"], lw=0.5, alpha=0.35, label="원본")
+
+    for idx, W in enumerate(window_sizes):
+        rm = pd.Series(values).rolling(window=W, min_periods=1).mean().to_numpy()
+        ax.plot(t, rm, color=ROLL_COLORS[idx % len(ROLL_COLORS)],
+                lw=1.3, alpha=0.9, label=f"W={W}")
+
+    if segs:
+        _draw_anomaly_overlays(ax, segs, t)
+
+    ax.set_xlabel("t (timestep)", fontsize=11)
+    ax.set_ylabel(channel, fontsize=11)
+    ax.legend(fontsize=9, loc="upper right")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.set_facecolor("#f5f8ff")
+
+    split = "val" if has_label else "train"
+    fig.suptitle(
+        f"Step 5.  Rolling Mean 비교 — {channel}  ({split}.csv)",
+        fontsize=12, fontweight="bold",
+    )
+
+    out = f"./eda/outputs/step5_rolling_mean_compare_{channel}.png"
+    plt.savefig(out, dpi=150, bbox_inches="tight")
+    print(f"  Saved: {out}")
+    plt.show()
+    plt.close(fig)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -901,6 +1032,8 @@ def main():
     metrics, _ = step2_seasonality_trend(train)
     step3_correlation(train, metrics=metrics)
     step4_anomaly_analysis(val)
+    step5_rolling_mean(train, window_sizes=(30, 200))
+    step5_rolling_mean(val,   window_sizes=(30, 200))
 
 
 if __name__ == "__main__":

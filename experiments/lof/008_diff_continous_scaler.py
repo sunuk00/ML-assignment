@@ -78,10 +78,11 @@ if __name__ == "__main__":
     model = fit_lof(train_X, n_neighbors=N_NEIGHBORS, contamination=CONTAMINATION)
 
     # 8. Score 계산 (min-max -score_samples)
-    val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
-    test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
-    # val_scores  = minmax(-model.score_samples(val_X))
-    # test_scores = minmax(-model.score_samples(test_X))
+    # val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
+    # test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
+
+    val_scores  = minmax(-model.score_samples(val_X))
+    test_scores = minmax(-model.score_samples(test_X))
 
     # 9. 평가 출력
     print(f"\n  val  AUROC={evaluate_auroc(val_scores, val_labels):.4f}  AUPR={evaluate_aupr(val_scores, val_labels):.4f}")

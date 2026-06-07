@@ -81,12 +81,12 @@ if __name__ == "__main__":
     model = fit_lof(train_X, n_neighbors=N_NEIGHBORS, contamination=CONTAMINATION)
 
     # 7. Score 계산
-    val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
-    test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
+    # val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
+    # test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
 
-    # # min-max 정규화 버전 (LOF는 이상치 점수가 클수록 정상에 가깝기 때문에 flip_score → -score_samples)
-    # val_scores  = minmax(-model.score_samples(val_X))
-    # test_scores = minmax(-model.score_samples(test_X))
+    # min-max 정규화 버전 (LOF는 이상치 점수가 클수록 정상에 가깝기 때문에 flip_score → -score_samples)
+    val_scores  = minmax(-model.score_samples(val_X))
+    test_scores = minmax(-model.score_samples(test_X))
 
     # 8. 평가
     print(f"\n  val  AUROC={evaluate_auroc(val_scores, val_labels):.4f}  AUPR={evaluate_aupr(val_scores, val_labels):.4f}")
