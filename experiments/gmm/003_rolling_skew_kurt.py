@@ -31,9 +31,9 @@ from src.evaluate      import evaluate_aupr, evaluate_auroc, anomaly_type_aupr, 
 DATA_DIR   = ROOT_DIR / "data"
 OUTPUT_DIR = ROOT_DIR / "experiments" / "gmm" / "outputs"
 
-WINDOW_SIZE     = 5
+WINDOW_SIZE     = 200
 ROLL_STATS      = ['mean', 'std', 'min', 'max', 'range', 'skew', 'kurt']
-N_COMPONENTS    = 3
+N_COMPONENTS    = 5
 COVARIANCE_TYPE = "full"
 PCA_VARIANCE    = 0.95
 POINT_LEN      = (1,   5)
