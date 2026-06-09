@@ -82,9 +82,15 @@ if __name__ == "__main__":
     model = fit_isolation_forest(train_X, n_estimators=N_ESTIMATORS,
                                   contamination=CONTAMINATION, random_state=RANDOM_STATE)
 
-    # 5. Score 계산
-    val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
-    test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
+    # 5. Score 계산 TODO: 여기 테스트
+    val_raw  = flip_score(model.score_samples(val_X))
+    test_raw = flip_score(model.score_samples(test_X))
+
+    # val 분포 기준으로 test를 정규화 → 점수 의미 통일
+    from scipy.stats import percentileofscore
+    val_scores  = np.array([percentileofscore(val_raw, s, kind='rank') for s in val_raw])  / 100
+    test_scores = np.array([percentileofscore(val_raw, s, kind='rank') for s in test_raw]) / 100
+
 
     # 6. 평가
     print(f"\n  val  AUROC={evaluate_auroc(val_scores, val_labels):.4f}  AUPR={evaluate_aupr(val_scores, val_labels):.4f}")

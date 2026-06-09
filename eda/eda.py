@@ -1025,6 +1025,98 @@ def step5_rolling_mean_compare(df, channel, window_sizes=(30, 200), label_col="l
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+# ---------------------------------------------------------------------------
+# Step 6. Validation Residual Visualization
+# ---------------------------------------------------------------------------
+
+def step6_validation_residual(val_df, metrics=None, label_col="label"):
+    """
+    Visualize seasonal-decomposition residuals for validation continuous channels.
+
+    The period detected from train.csv in Step 2 is reused when available so the
+    residual definition stays consistent between train and validation.
+    """
+    classification = classify_channels(val_df)
+    continuous_chs = [
+        ch for ch, ch_type in classification.items()
+        if ch != label_col and ch_type == "continuous"
+    ]
+    if not continuous_chs:
+        print("Step 6. Validation Residual Visualization - no continuous channels")
+        return
+
+    t         = val_df["t"].values if "t" in val_df.columns else np.arange(len(val_df))
+    has_label = label_col in val_df.columns
+    segs      = _get_anomaly_segments(val_df[label_col].values) if has_label else []
+
+    print("=" * 60)
+    print("Step 6. Validation Residual Visualization")
+    print("=" * 60)
+
+    fig, axes = plt.subplots(
+        len(continuous_chs), 1, sharex=True,
+        figsize=(18, 2.2 * len(continuous_chs)),
+        gridspec_kw={"hspace": 0.12},
+    )
+    if len(continuous_chs) == 1:
+        axes = [axes]
+
+    for i, ch in enumerate(continuous_chs):
+        ax = axes[i]
+        period = None
+        if metrics is not None and ch in metrics:
+            period = metrics[ch].get("period")
+        if period is None:
+            period = _detect_period(val_df[ch])
+
+        try:
+            result = seasonal_decompose(
+                val_df[ch], model="additive", period=period, extrapolate_trend="freq"
+            )
+            residual = result.resid.to_numpy()
+        except Exception as e:
+            print(f"  [validation residual] {ch} failed: {e}")
+            residual = np.full(len(val_df), np.nan)
+
+        ax.plot(t, residual, color="#666666", lw=0.6, alpha=0.9, label="Residual")
+        ax.axhline(0, color="#cccccc", lw=0.8, ls="--", zorder=0)
+        if segs:
+            _draw_anomaly_overlays(ax, segs, t)
+
+        finite = residual[np.isfinite(residual)]
+        if len(finite):
+            res_max  = float(np.max(np.abs(finite)))
+            res_mean = float(np.mean(finite))
+            margin   = res_max * 1.1 if res_max > 0 else 1.0
+            ax.set_ylim(res_mean - margin, res_mean + margin)
+            ax.text(
+                0.005, 0.90,
+                f"period={period}  max |residual|={res_max:.2e}",
+                transform=ax.transAxes, ha="left", va="top",
+                fontsize=8, color="#666666",
+            )
+
+        ax.set_ylabel(ch, rotation=0, ha="right", va="center",
+                      fontsize=10, fontweight="bold", color="#666666")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set_facecolor("#f5f8ff")
+        ax.tick_params(labelsize=8)
+        if i < len(continuous_chs) - 1:
+            ax.tick_params(labelbottom=False)
+
+    axes[-1].set_xlabel("t (timestep)", fontsize=11)
+    fig.suptitle(
+        f"Step 6.  Validation Residual  -  val.csv  |  {len(val_df):,} timesteps",
+        fontsize=13, fontweight="bold", y=1.002,
+    )
+    out = "./eda/outputs/step6_validation_residual.png"
+    plt.savefig(out, dpi=150, bbox_inches="tight")
+    print(f"  Saved: {out}")
+    plt.show()
+    plt.close(fig)
+
+
 def main():
     train, val, test = load_data(missing_method=MISSING_METHOD)
 
@@ -1034,6 +1126,7 @@ def main():
     step4_anomaly_analysis(val)
     step5_rolling_mean(train, window_sizes=(30, 200))
     step5_rolling_mean(val,   window_sizes=(30, 200))
+    step6_validation_residual(val, metrics=metrics)
 
 
 if __name__ == "__main__":

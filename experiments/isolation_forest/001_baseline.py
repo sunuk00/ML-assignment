@@ -39,7 +39,7 @@ DATA_DIR   = ROOT_DIR / "data"
 OUTPUT_DIR = ROOT_DIR / "experiments" / "isolation_forest" / "outputs"
 
 N_ESTIMATORS  = 300
-CONTAMINATION = 0.0001
+CONTAMINATION = 0.00001
 RANDOM_STATE  = 42
 POINT_LEN      = (1,   5)
 CONTEXTUAL_LEN = (6,   200)

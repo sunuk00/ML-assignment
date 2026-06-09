@@ -1,16 +1,20 @@
-"""실험 010: IF — x_f8 Diff + Z-Score Rolling(W=200) + 이산형 비율
+"""실험 012: IF — Z-Score Rolling(W=200) + Warm-up Drop
 
-전처리: x_f8 채널만 diff(1).fillna(0) 적용, 나머지 9채널은 원본 유지
-Feature: 연속형 7채널 → z-score(W=200), 이산형 3채널 → rolling mean(비율)
+전처리: x_f8 diff(1) → 연속형 z-score(W=200, shift(1)) + 이산형 rolling mean(W=200)
+Warm-up: 학습 데이터에서 초기 WINDOW_SIZE 행을 제거하여 불안정 통계량 오염 방지
 
 설계 근거:
-기존 실험들은 rolling mean/std 절대값을 피처로 썼으나,
-절대값은 센서마다 스케일이 달라 IF의 분리 기준이 흔들릴 수 있습니다.
-z-score = (현재값 − 과거 rolling mean) / (과거 rolling std + ε) 는
-"과거 맥락 대비 현재가 얼마나 벗어났는가"를 스케일 불변 방식으로 표현하므로
-절대값 기반 피처보다 점 이상·맥락 이상 모두에 민감할 것으로 기대합니다.
-shift(1) 로 현재 시점을 계산에서 제외해 look-ahead bias를 방지합니다.
-x_f8은 장기 트렌드가 강한 채널이므로 diff()로 비정상성을 제거합니다.
+010과 동일한 z-score 피처를 사용하되, 학습 시 초기 Warm-up 구간을 제거합니다.
+윈도우 크기(200)보다 적은 과거 데이터가 쌓인 초기 구간(t=0 ~ W-1)에서는
+rolling mean/std가 단 몇 개 샘플로 계산되어 극단적인 z-score가 생성됩니다.
+이 불안정한 피처가 학습 데이터에 포함되면 IF가 '정상 초기 구간'을
+이상치로 오해하는 분포 오염이 발생합니다.
+
+해결책:
+  학습(train): 피처 계산 후 첫 WINDOW_SIZE 행을 제거 → 안정된 통계량만 학습
+  검증(val) / 테스트(test): 전 구간 유지 → 평가 커버리지 보전
+
+shift(1)로 look-ahead bias를 방지하고, x_f8 diff로 장기 트렌드를 제거합니다.
 
 피처 차원: 연속형 7 × 1(z-score) + 이산형 3 × 1(ratio) = 10
 """
@@ -36,8 +40,8 @@ from src.evaluate      import evaluate_aupr, evaluate_auroc, anomaly_type_aupr, 
 DATA_DIR   = ROOT_DIR / "data"
 OUTPUT_DIR = ROOT_DIR / "experiments" / "isolation_forest" / "outputs"
 
-WINDOW_SIZE   = 300
-DIFF_COL      = 'x_f8'
+WINDOW_SIZE   = 200
+DIFF_COL      = "x_f8"
 N_ESTIMATORS  = 300
 CONTAMINATION = 0.0001
 RANDOM_STATE  = 42
@@ -53,8 +57,7 @@ def _apply_diff_single(df: pd.DataFrame, col: str) -> pd.DataFrame:
 
 
 def _zscore_features(df: pd.DataFrame, cols: list[str], w: int) -> pd.DataFrame:
-    """각 채널에 대해 z-score = (현재 - 과거 rolling mean) / (과거 rolling std + 1e-8) 계산.
-    shift(1)로 현재 시점을 rolling 계산에서 제외해 look-ahead bias를 방지합니다."""
+    """z-score = (현재 - 과거 rolling mean) / (과거 rolling std + ε), shift(1)로 look-ahead 방지."""
     past   = df[cols].shift(1)
     r_mean = past.rolling(w, min_periods=1).mean()
     r_std  = past.rolling(w, min_periods=1).std().fillna(0)
@@ -69,7 +72,7 @@ def _disc_ratio(df: pd.DataFrame, cols: list[str], w: int) -> pd.DataFrame:
 
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print("=== 010 IF — x_f8 Diff + Z-Score Rolling(W=200) + Disc Ratio ===\n")
+    print("=== 012 IF — Z-Score Rolling(W=200) + Warm-up Drop ===\n")
 
     # 1. 데이터 로드
     train_df, _           = load_data("train",       str(DATA_DIR))
@@ -108,17 +111,23 @@ if __name__ == "__main__":
     train_X = np.hstack([train_z.to_numpy(), train_d.to_numpy()])
     val_X   = np.hstack([val_z.to_numpy(),   val_d.to_numpy()])
     test_X  = np.hstack([test_z.to_numpy(),  test_d.to_numpy()])
+
+    # 8. Warm-up Drop: 학습 데이터에서 초기 WINDOW_SIZE 행 제거
+    # val/test는 전 구간 평가를 위해 유지
+    train_X_stable = train_X[WINDOW_SIZE:]
+    print(f"  Warm-up drop: train {train_X.shape[0]}행 → {train_X_stable.shape[0]}행 (첫 {WINDOW_SIZE}행 제거)")
     print(f"  feature dim: {train_X.shape[1]}  (cont {len(cont_cols)}×z-score + disc {len(disc_cols)}×ratio, W={WINDOW_SIZE})")
 
-    # 8. 모델 학습
-    model = fit_isolation_forest(train_X, n_estimators=N_ESTIMATORS,
+    # 9. 모델 학습 (안정된 구간만 사용)
+    print(f"  IF n_estimators={N_ESTIMATORS}  contamination={CONTAMINATION}")
+    model = fit_isolation_forest(train_X_stable, n_estimators=N_ESTIMATORS,
                                   contamination=CONTAMINATION, random_state=RANDOM_STATE)
 
-    # 9. Score 계산
+    # 10. Score 계산 (val/test는 전 구간)
     val_scores  = rank_normalize(flip_score(model.score_samples(val_X)))
     test_scores = rank_normalize(flip_score(model.score_samples(test_X)))
 
-    # 10. 평가
+    # 11. 평가
     print(f"\n  val  AUROC={evaluate_auroc(val_scores, val_labels):.4f}  AUPR={evaluate_aupr(val_scores, val_labels):.4f}")
     print(f"  test AUROC={evaluate_auroc(test_scores, test_labels):.4f}  AUPR={evaluate_aupr(test_scores, test_labels):.4f}")
     print(f"\n  [Val] 유형별 AUPR")
@@ -130,10 +139,10 @@ if __name__ == "__main__":
     print(f"  Contextual {anomaly_type_aupr(test_scores, test_labels, *CONTEXTUAL_LEN):.4f}")
     print(f"  Collective {anomaly_type_aupr(test_scores, test_labels, *COLLECTIVE_LEN):.4f}")
 
-    # 11. 시각화
+    # 12. 시각화
     plot_full(val_scores, val_labels, test_scores, test_labels,
-              tag="010_zscore_rolling_w200", save_path=str(OUTPUT_DIR / "010_val_score_trace.png"))
+              tag="012_warmup_drop_w200", save_path=str(OUTPUT_DIR / "012_val_score_trace.png"))
     plot_zooms(val_scores, val_labels, test_scores, test_labels,
-               tag="010_zscore_rolling_w200", save_path=str(OUTPUT_DIR / "010_val_score_zoom.png"))
+               tag="012_warmup_drop_w200", save_path=str(OUTPUT_DIR / "012_val_score_zoom.png"))
     plot_score_hist(val_scores, val_labels, test_scores, test_labels,
-                    tag="010_zscore_rolling_w200", save_path=str(OUTPUT_DIR / "010_score_hist.png"))
+                    tag="012_warmup_drop_w200", save_path=str(OUTPUT_DIR / "012_score_hist.png"))
