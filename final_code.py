@@ -4,7 +4,7 @@
 모델   : LOF-Disc + GMM-003 앙상블
 입력   : data/train.csv, data/test_hidden_no_labels.csv
 출력   : test_hidden_no_labels_result.csv
-실행   : python 202302904.py
+실행   : python final_code.py
 
 앙상블 전략
 -----------
