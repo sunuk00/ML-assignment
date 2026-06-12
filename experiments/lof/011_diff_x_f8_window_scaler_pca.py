@@ -1,11 +1,10 @@
-"""실험 011: LOF — x_f8 차분 + 연속형 윈도우 통계 + StandardScaler + PCA
+"""실험 011: LOF — x_f8 차분 + 연속형 Rolling 통계 + StandardScaler + PCA
 
-010 파이프라인에 PCA를 추가합니다.
-x_f8 채널에만 1차 차분(diff)을 적용하여 장기 트렌드를 제거한 뒤,
-연속형 7채널에 대해 슬라이딩 윈도우(W=50) 통계를 계산하고
-StandardScaler → PCA(95% 분산 유지)를 순서대로 적용하여 LOF로 이상치 점수를 산출합니다.
+x_f8 채널에만 diff를 적용하고, 연속형 채널(7개)에 Rolling 통계 → StandardScaler → PCA를 적용합니다.
+이산형 채널(3개)은 포함하지 않습니다.
+LocalOutlierFactor(novelty=True)로 학습 및 추론합니다.
 
-피처 차원: 연속형 7채널 × 5통계 = 35 → scaler → PCA
+피처 차원: 연속형 7 × 5통계 = 35 → StandardScaler → PCA
 """
 
 from __future__ import annotations

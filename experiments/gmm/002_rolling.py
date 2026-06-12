@@ -1,15 +1,9 @@
-"""실험 002: GMM — Rolling 통계 도입 (Contextual 타겟, W=200)
+"""실험 002: GMM — 연속형 + StandardScaler + PCA + Rolling 통계
 
-전처리: 연속형 7채널 → StandardScaler → PCA(95%) → Rolling(W=200) → 5통계량
-GMM(n_components=3, covariance_type='full')으로 확률 밀도를 추정합니다.
+연속형 채널(7개)에 StandardScaler → PCA → Rolling 통계(mean/std/min/max/range)를 적용합니다.
+GaussianMixture로 학습 및 추론합니다.
 
-설계 근거:
-Contextual Anomaly 길이(60~90 step)를 충분히 덮기 위해 W=200을 적용합니다.
-과거 200 step의 평균/분산 변화를 GMM이 학습하여 정상 분포 궤도에서 벗어나는
-이상을 탐지할 수 있는지 확인합니다.
-001_baseline 대비 Contextual/Collective AUPR 향상을 기대합니다.
-
-피처 차원: 연속형 7 → Scaler → PCA(95%) → Rolling W=200 → 각 PC × 5통계
+피처 차원: 연속형 7 → StandardScaler → PCA → 각 PC × 5통계
 """
 
 from __future__ import annotations

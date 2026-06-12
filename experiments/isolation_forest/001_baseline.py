@@ -1,21 +1,9 @@
 """실험 001: IF — 원본 피처 (Raw Features)
 
-전처리 없이 원본 x_ 채널(10개)을 그대로 Isolation Forest에 입력합니다.
-baseline 성능의 하한선을 확인하는 실험입니다.
+전처리 없이 모든 채널(10개) 원본값을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-결과 (기록):
-  val  AUROC=0.7164  AUPR=0.3298
-  test AUROC=0.6360  AUPR=0.2201
-
-  [Val] 유형별 AUPR
-  Point      0.0031
-  Contextual 0.1067
-  Collective 0.2883
-
-  [Test] 유형별 AUPR
-  Point      0.0175
-  Contextual 0.0601
-  Collective 0.1893
+피처 차원: 10채널(raw)
 """
 
 from __future__ import annotations

@@ -1,7 +1,10 @@
-"""실험 008: LOF — 연속형 차분 + StandardScaler
+"""실험 008: LOF — 차분(연속형) + StandardScaler
 
-연속형 채널(이산형 제외)에 차분(diff) 적용 후, 학습 데이터 기준 StandardScaler를 적용하여
-LOF로 이상치 점수 산출합니다.
+연속형 채널(7개)에 diff → StandardScaler를 적용합니다.
+이산형 채널(3개)은 포함하지 않습니다.
+LocalOutlierFactor(novelty=True)로 학습 및 추론합니다.
+
+피처 차원: 연속형 7(diff) → StandardScaler
 """
 from __future__ import annotations
 from pathlib import Path

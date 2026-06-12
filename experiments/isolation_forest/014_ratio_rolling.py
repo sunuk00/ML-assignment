@@ -1,10 +1,9 @@
-"""실험 014: IF — 연속형 Rolling Window 통계 + 이산형 Rolling Mean(비율)
+"""실험 014: IF — 연속형 Rolling 통계 + 이산형 Rolling Mean
 
-013에서 x_f8 차분(diff)을 제거한 실험입니다.
-연속형 7채널에 대해 rolling(W=100) 통계 5개를 사용하고,
-이산형 3채널에 대해서는 rolling mean(활성화 비율)을 계산합니다.
+연속형 채널(7개)에 Rolling 통계(mean/std/min/max/range)를, 이산형 채널(3개)에 Rolling Mean(활성화 비율)을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-피처 차원: 연속형 7채널 × 5통계 + 이산형 3채널 × 1(ratio) = 38
+피처 차원: 연속형 7 × 5통계 + 이산형 3(rolling mean) = 38
 """
 
 from __future__ import annotations

@@ -1,11 +1,10 @@
-"""실험 013: LOF — x_f8 차분 + 연속형 원본 + 이산형 Rolling Mean(비율) + StandardScaler
+"""실험 013: LOF — x_f8 차분 + 연속형 원본 + 이산형 Rolling Mean + StandardScaler
 
-012 파이프라인에 이산형 채널(rolling mean 비율)을 추가합니다.
-연속형 7채널은 012와 동일하게 x_f8 diff → 원본 → StandardScaler 처리하고,
-이산형 3채널은 슬라이딩 윈도우(W=DISC_WINDOW)의 평균(활성화 비율)으로 변환하여
-스케일된 연속형 피처에 concat합니다.
+x_f8 채널에만 diff를 적용하고, 연속형 채널(7개)에 StandardScaler를 적용합니다.
+이산형 채널(3개)에 Rolling Mean(활성화 비율)을 계산하여 연결합니다.
+LocalOutlierFactor(novelty=True)로 학습 및 추론합니다.
 
-피처 차원: 연속형 7채널(StandardScaler) + 이산형 3채널(rolling mean) = 10
+피처 차원: 연속형 7(StandardScaler) + 이산형 3(rolling mean) = 10
 """
 
 from __future__ import annotations

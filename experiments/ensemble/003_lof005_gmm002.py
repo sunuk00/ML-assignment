@@ -1,30 +1,8 @@
-"""앙상블 003: LOF-005 (Raw Cont + Scaler) + GMM-002 (PCA Rolling) — Rank 평균 앙상블
+"""앙상블 003: LOF-005 + GMM-002 — Rank 평균 앙상블
 
-모델 조합
----------
-  LOF: 연속형 7채널 원본 → StandardScaler
-       → LOF-005 기반 파이프라인 (시간 맥락 없음, 현재 시점 국소 밀도)
-  GMM: 연속형 7채널 → StandardScaler → PCA(95%) → Rolling(W=30) → 5통계
-       → GMM-002 기반 파이프라인 (PCA 공간에서 시간 맥락 포함 전역 밀도)
-
-설계 근거
----------
-  LOF: 현재 시점의 원본 피처 공간에서 국소(local) 밀도 이상 탐지.
-  GMM: PCA로 차원 축소 후 rolling 통계를 통해 시간 맥락까지 반영한 전역(global) 밀도 추정.
-  두 모델은 (1) 시간 정보 활용 여부, (2) 밀도 추정 방식(국소 vs 전역)이 모두 달라
-  다양성이 높아 앙상블 이득이 기대됩니다.
-
-앙상블 전략
------------
-  rank_normalize 후 단순 평균 (equal weight)
-
-출력 파일
----------
-  003_diversity.png       — Score 산점도 / 상관계수 히트맵 / AUPR 비교 / Score KDE
-  003_score_trace.png     — val: LOF / GMM / Ensemble 3행 score 추이
-  003_val_score_trace.png — Ensemble만: val+test 전체 추이
-  003_val_score_zoom.png  — Ensemble: 이상 구간 확대
-  003_score_hist.png      — Ensemble: score 분포 히스토그램
+LOF: 연속형 7채널 원본 → StandardScaler (LOF-005 기반)
+GMM: 연속형 7채널 → StandardScaler → PCA → Rolling 통계 (GMM-002 기반)
+rank_normalize 후 단순 평균으로 앙상블합니다.
 """
 
 from __future__ import annotations

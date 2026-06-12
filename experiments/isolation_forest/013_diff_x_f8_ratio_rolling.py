@@ -1,11 +1,9 @@
-"""실험 013: IF — 연속형 롤링 통계 + 이산형 윈도우 평균(활성화 비율) + x_f8 diff
+"""실험 013: IF — 연속형 Rolling 통계 + 이산형 Rolling Mean + x_f8 차분
 
-007 기반에서 x_f8 채널만 1차 차분(diff)을 추가 적용합니다.
-연속형 7채널에 대해 rolling(W=100) 통계 5개를 사용하고,
-이산형 3채널에 대해서는 rolling mean(비율)을 계산합니다.
-x_f8은 장기 트렌드(drift)가 있어 diff()로 비정상성을 제거합니다.
+x_f8 채널에만 diff를 적용하고, 연속형 채널(7개)에 Rolling 통계(mean/std/min/max/range)를, 이산형 채널(3개)에 Rolling Mean(활성화 비율)을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-결과 (기록):
+피처 차원: 연속형 7 × 5통계 + 이산형 3(rolling mean) = 38
 """
 
 from __future__ import annotations

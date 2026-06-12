@@ -1,22 +1,10 @@
-"""실험 012: IF — Z-Score Rolling(W=200) + Warm-up Drop
+"""실험 012: IF — Z-Score Rolling + Warm-up Drop
 
-전처리: x_f8 diff(1) → 연속형 z-score(W=200, shift(1)) + 이산형 rolling mean(W=200)
-Warm-up: 학습 데이터에서 초기 WINDOW_SIZE 행을 제거하여 불안정 통계량 오염 방지
+x_f8 차분 후 연속형 채널(7개)에 Z-Score Rolling을, 이산형 채널(3개)에 Rolling Mean(활성화 비율)을 사용합니다.
+학습 시 초기 Warm-up 구간을 제거합니다.
+IsolationForest로 학습 및 추론합니다.
 
-설계 근거:
-010과 동일한 z-score 피처를 사용하되, 학습 시 초기 Warm-up 구간을 제거합니다.
-윈도우 크기(200)보다 적은 과거 데이터가 쌓인 초기 구간(t=0 ~ W-1)에서는
-rolling mean/std가 단 몇 개 샘플로 계산되어 극단적인 z-score가 생성됩니다.
-이 불안정한 피처가 학습 데이터에 포함되면 IF가 '정상 초기 구간'을
-이상치로 오해하는 분포 오염이 발생합니다.
-
-해결책:
-  학습(train): 피처 계산 후 첫 WINDOW_SIZE 행을 제거 → 안정된 통계량만 학습
-  검증(val) / 테스트(test): 전 구간 유지 → 평가 커버리지 보전
-
-shift(1)로 look-ahead bias를 방지하고, x_f8 diff로 장기 트렌드를 제거합니다.
-
-피처 차원: 연속형 7 × 1(z-score) + 이산형 3 × 1(ratio) = 10
+피처 차원: 연속형 7(z-score) + 이산형 3(rolling mean) = 10
 """
 
 from __future__ import annotations

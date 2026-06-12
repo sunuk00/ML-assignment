@@ -1,31 +1,8 @@
 """앙상블 009: LOF-013 + GMM-005 — Rank 평균 앙상블
 
-모델 조합
----------
-  LOF: x_f8 차분 → 연속형 7채널 원본 → StandardScaler + 이산형 3채널 rolling mean(W=10)
-       → LOF-013 기반 파이프라인 (012에 이산형 활성화 비율 추가)
-  GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA(95%)
-       → Rolling(W=20, mean/std/min/max/range) → GMM-005 기반 파이프라인
-
-설계 근거
----------
-  LOF-013: LOF-012에 이산형 rolling mean(비율)을 추가해 이산 채널 정보를 포함.
-  GMM-005: 동일한 x_f8 차분 후 PCA 압축 공간에서 확률 밀도 이상을 탐지.
-  LOF는 이산형 포함 10차원 국소 밀도, GMM은 PCA+rolling 연속형 전역 밀도로
-  표현 공간과 이상 탐지 방식이 서로 보완적입니다.
-
-앙상블 전략
------------
-  각 모델 score를 rank_normalize 후 단순 평균 (equal weight)
-
-출력 파일
----------
-  009_diversity.png       — Score 산점도 / 상관계수 히트맵 / AUPR 비교 / Score KDE
-  009_score_trace.png     — val: LOF / GMM / Ensemble 3행 score 추이
-  009_val_score_trace.png — Ensemble만: val+test 전체 추이
-  009_val_score_zoom.png  — Ensemble: 이상 구간 확대
-  009_score_hist.png      — Ensemble: score 분포 히스토그램
-  009_report.png          — 보고서용 통합 Figure (ROC/PR/Hist/Trace/확대)
+LOF: x_f8 차분 → 연속형 7채널 원본 + 이산형 Rolling Mean → StandardScaler (LOF-013 기반)
+GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA → Rolling 통계 (GMM-005 기반)
+rank_normalize 후 단순 평균으로 앙상블합니다.
 """
 
 from __future__ import annotations

@@ -1,23 +1,9 @@
 """실험 004: IF — Rolling 통계 + 연속/이산 분리
 
-연속형 채널(7개)에만 rolling(w=500) 통계 피처를 적용하고,
-이산형 채널(3개)은 원본값을 그대로 사용합니다.
-결측치 선형 보간 적용.
-피처 차원: 연속형 7채널 × 5통계 + 이산형 3채널 = 38
+연속형 채널(7개)에 Rolling 통계(mean/std/min/max/range)를, 이산형 채널(3개)은 원본값을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-결과 (기록):
-  val  AUROC=0.6932  AUPR=0.2822
-  test AUROC=0.6475  AUPR=0.1917
-
-  [Val] 유형별 AUPR
-  Point      0.0008
-  Contextual 0.0256
-  Collective 0.2718
-
-  [Test] 유형별 AUPR
-  Point      0.0010
-  Contextual 0.0505
-  Collective 0.1662
+피처 차원: 연속형 7 × 5통계 + 이산형 3(raw) = 38
 """
 
 from __future__ import annotations

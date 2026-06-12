@@ -1,14 +1,9 @@
-"""실험 003: GMM — Rolling + Skewness/Kurtosis 추가
+"""실험 003: GMM — 연속형 + StandardScaler + PCA + Rolling + Skewness/Kurtosis
 
-전처리: 연속형 7채널 → StandardScaler → PCA(95%) → Rolling(W=200) → 7통계량
-GMM(n_components=3, covariance_type='full')으로 확률 밀도를 추정합니다.
+연속형 채널(7개)에 StandardScaler → PCA → Rolling 통계(mean/std/min/max/range/skew/kurt)를 적용합니다.
+GaussianMixture로 학습 및 추론합니다.
 
-설계 근거:
-GMM은 데이터가 가우시안(종 모양)을 따른다고 가정합니다.
-윈도우 안에 이상치가 섞이면 분포가 찌그러지거나(왜도 변동) 꼬리가 두꺼워집니다(첨도 변동).
-002 대비 왜도(skew)와 첨도(kurt)를 추가하여 분포 붕괴를 GMM이 더 예민하게 포착하는지 확인합니다.
-
-피처 차원: 연속형 7 → Scaler → PCA(95%) → Rolling W=200 → 각 PC × 7통계
+피처 차원: 연속형 7 → StandardScaler → PCA → 각 PC × 7통계
 """
 
 from __future__ import annotations

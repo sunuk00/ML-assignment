@@ -1,8 +1,9 @@
-"""실험 007: IF — 연속형 롤링 통계 + 이산형 윈도우 평균(활성화 비율)
-연속형 7채널에 대해 rolling(w=50) 통계 5개를 사용하고,
-이산형 3채널에 대해서는 같은 윈도우 크기로 rolling mean(비율) 하나를 계산해 연속형 확률 밀도로 변환합니다.
+"""실험 007: IF — 연속형 Rolling 통계 + 이산형 Rolling Mean
 
-결과 (기록):
+연속형 채널(7개)에 Rolling 통계(mean/std/min/max/range)를, 이산형 채널(3개)에 Rolling Mean(활성화 비율)을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
+
+피처 차원: 연속형 7 × 5통계 + 이산형 3(rolling mean) = 38
 """
 
 from __future__ import annotations

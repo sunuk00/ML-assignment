@@ -1,15 +1,9 @@
-"""실험 005: GMM — x_f8 차분 + Rolling 통계 (W=30)
+"""실험 005: GMM — x_f8 차분 + 연속형 + StandardScaler + PCA + Rolling 통계
 
-전처리: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA(95%)
-        → Rolling(W=30) → 5통계량(mean, std, min, max, range)
-GMM(n_components=5, covariance_type='full')으로 확률 밀도를 추정합니다.
+x_f8 채널에만 diff를 적용하고, 연속형 채널(7개)에 StandardScaler → PCA → Rolling 통계(mean/std/min/max/range)를 적용합니다.
+GaussianMixture로 학습 및 추론합니다.
 
-설계 근거:
-002_rolling.py 기반에 x_f8 채널 차분(diff)을 추가합니다.
-x_f8이 추세(drift)를 가진 채널이라면 차분으로 비정상성을 제거하여
-GMM이 잔차 변화의 이상을 더 잘 포착할 수 있습니다.
-
-피처 차원: x_f8 차분 → 연속형 7 → Scaler → PCA(95%) → Rolling W=30 → 각 PC × 5통계
+피처 차원: x_f8 diff → 연속형 7 → StandardScaler → PCA → 각 PC × 5통계
 """
 
 from __future__ import annotations

@@ -1,33 +1,9 @@
 """앙상블 008: IF-013 + LOF-012 + GMM-005 — Rank 평균 앙상블
 
-모델 조합
----------
-  IF : x_f8 차분 → 연속형 rolling(W=5, 5통계) + 이산형 rolling mean(W=5)
-       → IF-013 기반 파이프라인 (x_f8 트렌드 제거 + 이산형 활성화 비율 포함)
-  LOF: x_f8 차분 → 연속형 7채널 원본 → StandardScaler
-       → LOF-012 기반 파이프라인
-  GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA(95%)
-       → Rolling(W=20, mean/std/min/max/range) → GMM-005 기반 파이프라인
-
-설계 근거
----------
-  IF-013 : x_f8 트렌드 제거 + 이산형 포함 + rolling 시간 맥락.
-  LOF-012: x_f8 차분 후 원시 7채널 국소 밀도 — 현재 시점 밀도 정보.
-  GMM-005: x_f8 차분 + PCA 압축 공간 rolling 통계 — 전역 밀도 + 시간 맥락.
-  세 모델이 (1) 이산형 포함 여부, (2) 시간 집계 방식, (3) 밀도 추정 구조가 달라
-  다양성이 높을 것으로 기대합니다.
-
-앙상블 전략
------------
-  각 모델 score를 rank_normalize 후 단순 평균 (equal weight)
-
-출력 파일
----------
-  008_diversity.png       — 상관계수 히트맵 / AUPR 비교 / Score KDE / score 산점도
-  008_score_trace.png     — val: IF / LOF / GMM / Ensemble 4행 score 추이
-  008_val_score_trace.png — Ensemble만: val+test 전체 추이
-  008_val_score_zoom.png  — Ensemble: 이상 구간 확대
-  008_score_hist.png      — Ensemble: score 분포 히스토그램
+IF: x_f8 차분 → 연속형 Rolling 통계 + 이산형 Rolling Mean (IF-013 기반)
+LOF: x_f8 차분 → 연속형 7채널 원본 → StandardScaler (LOF-012 기반)
+GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA → Rolling 통계 (GMM-005 기반)
+rank_normalize 후 단순 평균으로 앙상블합니다.
 """
 
 from __future__ import annotations

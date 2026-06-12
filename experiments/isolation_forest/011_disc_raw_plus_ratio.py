@@ -1,35 +1,9 @@
-"""실험 011: IF — 연속형 Rolling 통계 + 이산형 원본 상태값 + 이산형 Rolling Mean
+"""실험 011: IF — 연속형 Rolling 통계 + 이산형 원본값 + 이산형 Rolling Mean
 
-전처리: 결측치 처리 후 연속형/이산형 분리, 별도 피처 구성
-Feature:
-  연속형 7채널 → rolling(W=50) 통계 5개 (mean, std, min, max, range)
-  이산형 3채널 → 원본 상태값 (OHE 없이 정수 그대로)
-              + rolling mean(W=50) 활성화 비율
+연속형 채널(7개)에 Rolling 통계(mean/std/min/max/range)를, 이산형 채널(3개)에 원본값 + Rolling Mean(활성화 비율)을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-설계 근거:
-007은 이산형을 rolling mean(비율)만으로 처리합니다.
-비율은 '최근 W 구간 내 평균 활성화 빈도'를 표현하지만
-현재 시점의 실제 상태(0 vs 1 등 정수값)는 담지 못합니다.
-
-원본 상태값을 함께 넣으면 트리가 아래 분기 조건을 직접 학습합니다:
-  raw=1 & ratio≈0  → 오랜 비활성 후 갑작스러운 활성화 (Point 이상 후보)
-  raw=0 & ratio≈1  → 오랜 활성 구간에서 갑작스러운 비활성화
-  raw=1 & ratio≈1  → 안정적인 활성 구간 (정상)
-
-OHE는 이산 상태 하나를 여러 열로 확장해 트리 분기를 분산시키고
-"현재 상태 vs 과거 비율" 간 상호작용을 드러내지 못합니다.
-정수 원본 유지 시 트리가 단일 임계값(≈0.5)으로 상태를 구분하므로
-rolling mean과의 조합 패턴을 더 효율적으로 학습합니다.
-
-비교 실험:
-  007 — 연속형 rolling 통계 + 이산형 rolling mean만 (raw 없음)
-  011 — 연속형 rolling 통계 + 이산형 raw + 이산형 rolling mean (본 실험)
-
-피처 차원:
-  연속형 7 × 5(rolling 통계) = 35
-  이산형 3 × 1(raw)          =  3
-  이산형 3 × 1(ratio)        =  3
-  합계                        = 41
+피처 차원: 연속형 7 × 5통계 + 이산형 3(raw + rolling mean) = 41
 """
 
 from __future__ import annotations

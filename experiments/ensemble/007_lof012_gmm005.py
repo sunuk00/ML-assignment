@@ -1,29 +1,8 @@
 """앙상블 007: LOF-012 + GMM-005 — Rank 평균 앙상블
 
-모델 조합
----------
-  LOF: x_f8 차분 → 연속형 7채널 원본 → StandardScaler → LOF-012 기반 파이프라인
-  GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA(95%)
-       → Rolling(W=20, mean/std/min/max/range) → GMM-005 기반 파이프라인
-
-설계 근거
----------
-  LOF-012는 LOF-005에 x_f8 차분을 추가한 실험입니다.
-  GMM-005는 동일한 x_f8 차분 후 PCA 압축 공간에서 확률 밀도 이상을 탐지합니다.
-  두 모델 모두 x_f8 차분을 적용하지만, LOF는 원시 7채널/GMM은 PCA+롤링 통계를 사용하여
-  표현 공간이 서로 다릅니다.
-
-앙상블 전략
------------
-  각 모델 score를 rank_normalize 후 단순 평균 (equal weight)
-
-출력 파일
----------
-  007_diversity.png       — Score 산점도 / 상관계수 히트맵 / AUPR 비교 / Score KDE
-  007_score_trace.png     — val: LOF / GMM / Ensemble 3행 score 추이
-  007_val_score_trace.png — Ensemble만: val+test 전체 추이
-  007_val_score_zoom.png  — Ensemble: 이상 구간 확대
-  007_score_hist.png      — Ensemble: score 분포 히스토그램
+LOF: x_f8 차분 → 연속형 7채널 원본 → StandardScaler (LOF-012 기반)
+GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA → Rolling 통계 (GMM-005 기반)
+rank_normalize 후 단순 평균으로 앙상블합니다.
 """
 
 from __future__ import annotations

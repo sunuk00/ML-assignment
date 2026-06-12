@@ -1,11 +1,10 @@
 """실험 007: LOF — 차분(연속형) + StandardScaler + PCA
 
-연속형 채널(7개)에 차분을 먼저 적용한 뒤, 학습 데이터 기준 StandardScaler와 PCA를
-순서대로 적용하여 피처로 사용합니다.
+연속형 채널(7개)에 diff → StandardScaler → PCA를 적용합니다.
 이산형 채널(3개)은 포함하지 않습니다.
 LocalOutlierFactor(novelty=True)로 학습 및 추론합니다.
 
-피처 차원: 연속형 7(diff) -> scaler -> PCA
+피처 차원: 연속형 7(diff) → StandardScaler → PCA
 """
 
 from __future__ import annotations

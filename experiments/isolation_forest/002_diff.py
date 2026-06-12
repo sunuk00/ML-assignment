@@ -1,21 +1,9 @@
-"""실험 002: IF — 1차 차분 (Difference)
+"""실험 002: IF — 1차 차분
 
-x_ 채널 전체에 diff(periods=1)를 적용한 뒤 Isolation Forest에 입력합니다.
-차분으로 트렌드를 제거하여 순간적인 변화량 패턴을 포착합니다.
+모든 채널(10개)에 diff를 적용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-결과 (기록):
-  val  AUROC=0.5924  AUPR=0.2200
-  test AUROC=0.5695  AUPR=0.2029
-
-  [Val] 유형별 AUPR
-  Point      0.0041
-  Contextual 0.0177
-  Collective 0.2104
-
-  [Test] 유형별 AUPR
-  Point      0.0049
-  Contextual 0.0131
-  Collective 0.1988
+피처 차원: 10채널(diff)
 """
 
 from __future__ import annotations

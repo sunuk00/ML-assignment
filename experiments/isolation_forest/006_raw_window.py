@@ -1,21 +1,9 @@
-"""실험 009: IF — Raw Window Flatten
+"""실험 006: IF — Raw Window Flatten
 
-통계량을 구하지 않고, window 크기만큼의 원본 데이터를 그대로 이어붙여 피처로 사용합니다.
-피처 차원: 10채널 × window_size = 5000
+모든 채널(10개)에 슬라이딩 윈도우 원본 데이터를 flatten하여 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-결과 (기록):
-  val  AUROC=0.6401  AUPR=0.2293
-  test AUROC=0.6066  AUPR=0.1750
-
-  [Val] 유형별 AUPR
-  Point      0.0004
-  Contextual 0.0521
-  Collective 0.2056
-
-  [Test] 유형별 AUPR
-  Point      0.0007
-  Contextual 0.0251
-  Collective 0.1575
+피처 차원: 10채널 × window 크기
 """
 
 from __future__ import annotations

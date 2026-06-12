@@ -1,15 +1,10 @@
-"""실험 001: GMM — Baseline (단일 시점, 연속형 + Scaler + PCA)
+"""실험 001: GMM — Baseline (연속형 + StandardScaler + PCA)
 
-전처리: 연속형 7채널 → StandardScaler → PCA(95%)
-슬라이딩 윈도우 없이 단일 시점 데이터만 사용합니다.
-GMM(n_components=3, covariance_type='full')으로 확률 밀도를 추정합니다.
+연속형 채널(7개)에 StandardScaler → PCA를 적용합니다.
+슬라이딩 윈도우 없이 단일 시점 데이터를 사용합니다.
+GaussianMixture로 학습 및 추론합니다.
 
-설계 근거:
-맥락(Sliding Window) 없이 PCA 압축 데이터만으로 GMM이 정상 분포를 얼마나 잘
-추정하는지 확인하는 최저 기준선 실험입니다.
-Contextual/Collective AUPR이 낮게 나올 것을 예상하는 대조군입니다.
-
-피처 차원: 연속형 7(raw) → StandardScaler → PCA(95%)
+피처 차원: 연속형 7(raw) → StandardScaler → PCA
 """
 
 from __future__ import annotations

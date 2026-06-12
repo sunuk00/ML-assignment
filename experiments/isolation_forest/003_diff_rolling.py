@@ -1,21 +1,9 @@
 """실험 003: IF — 차분 + Rolling 통계
-x_ 채널 전체에 diff(1) 적용 후 rolling(w=50) 통계 피처를 추출합니다.
-차분으로 변화량만 남기고, 롤링 통계로 변화 패턴을 집약합니다.
+
+모든 채널(10개)에 diff → Rolling 통계(mean/std/min/max/range)를 적용합니다.
+IsolationForest로 학습 및 추론합니다.
+
 피처 차원: 10채널 × 5통계 = 50
-
-결과 (기록):
-  val  AUROC=0.5472  AUPR=0.1768
-  test AUROC=0.5771  AUPR=0.1889
-
-  [Val] 유형별 AUPR
-  Point      0.0005
-  Contextual 0.0265
-  Collective 0.1597
-
-  [Test] 유형별 AUPR
-  Point      0.0007
-  Contextual 0.0823
-  Collective 0.1607
 """
 
 from __future__ import annotations

@@ -1,29 +1,8 @@
-"""앙상블 002: IF (Z-Score Rolling) + LOF-005 (Raw Cont + Scaler) — Rank 평균 앙상블
+"""앙상블 002: IF + LOF-005 — Rank 평균 앙상블
 
-모델 조합
----------
-  IF : x_f8 차분 → 연속형 z-score(W=50, shift(1)) + 이산형 rolling mean(W=50)
-       → IF-010 기반 파이프라인
-  LOF: 연속형 7채널 원본 → StandardScaler
-       → LOF-005 기반 파이프라인 (rolling 없음, 가장 단순한 LOF)
-
-설계 근거
----------
-  LOF-005는 원본 공간에서 국소 밀도 이상을 탐지합니다.
-  IF-010은 시간 맥락(과거 W=50 z-score)에서 이상을 탐지합니다.
-  두 모델이 서로 다른 정보를 사용하므로 다양성이 높을 것으로 기대합니다.
-
-앙상블 전략
------------
-  rank_normalize 후 단순 평균 (equal weight)
-
-출력 파일
----------
-  002_diversity.png       — Score 산점도 / 상관계수 히트맵 / AUPR 비교 / Score KDE
-  002_score_trace.png     — val: IF / LOF / Ensemble 3행 score 추이
-  002_val_score_trace.png — Ensemble만: val+test 전체 추이
-  002_val_score_zoom.png  — Ensemble: 이상 구간 확대
-  002_score_hist.png      — Ensemble: score 분포 히스토그램
+IF: x_f8 차분 → 연속형 Z-Score Rolling + 이산형 Rolling Mean (IF-010 기반)
+LOF: 연속형 7채널 원본 → StandardScaler (LOF-005 기반)
+rank_normalize 후 단순 평균으로 앙상블합니다.
 """
 
 from __future__ import annotations

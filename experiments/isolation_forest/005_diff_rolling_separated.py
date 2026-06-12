@@ -1,22 +1,9 @@
 """실험 005: IF — 차분 + Rolling 통계 + 연속/이산 분리
 
-연속형 채널(7개)에 diff(1) 적용 후 rolling(w=300) 통계 피처를 추출하고,
-이산형 채널(3개)은 차분 후 원본값을 그대로 사용합니다.
-피처 차원: 연속형 7채널 × 5통계 + 이산형 3채널 = 38
+연속형 채널(7개)에 diff → Rolling 통계(mean/std/min/max/range)를, 이산형 채널(3개)은 diff 후 원본값을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-결과 (기록):
-  val  AUROC=0.5635  AUPR=0.1861
-  test AUROC=0.5861  AUPR=0.1956
-
-  [Val] 유형별 AUPR
-  Point      0.0007
-  Contextual 0.0281
-  Collective 0.1687
-
-  [Test] 유형별 AUPR
-  Point      0.0010
-  Contextual 0.0355
-  Collective 0.1758
+피처 차원: 연속형 7 × 5통계 + 이산형 3(raw) = 38
 """
 
 from __future__ import annotations

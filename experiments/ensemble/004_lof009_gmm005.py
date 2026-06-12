@@ -1,29 +1,8 @@
 """앙상블 004: LOF-009 + GMM-005 — Rank 평균 앙상블
 
-모델 조합
----------
-  LOF: 연속형 7채널 → Window Stats(W=3, mean/std/min/max/median) → StandardScaler
-       → LOF-009 기반 파이프라인
-  GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA(95%)
-       → Rolling(W=20, mean/std/min/max/range) → GMM-005 기반 파이프라인
-
-설계 근거
----------
-  LOF-009는 짧은 윈도우(W=3) 슬라이딩 통계로 국소 밀도 이상을 탐지합니다.
-  GMM-005는 x_f8 트렌드 제거 후 PCA 압축된 공간에서 확률 밀도 이상을 탐지합니다.
-  두 모델이 서로 다른 표현 공간을 사용하므로 다양성이 높을 것으로 기대합니다.
-
-앙상블 전략
------------
-  각 모델 score를 rank_normalize 후 단순 평균 (equal weight)
-
-출력 파일
----------
-  004_diversity.png       — Score 산점도 / 상관계수 히트맵 / AUPR 비교 / Score KDE
-  004_score_trace.png     — val: LOF / GMM / Ensemble 3행 score 추이
-  004_val_score_trace.png — Ensemble만: val+test 전체 추이
-  004_val_score_zoom.png  — Ensemble: 이상 구간 확대
-  004_score_hist.png      — Ensemble: score 분포 히스토그램
+LOF: 연속형 7채널 → Rolling 통계 + StandardScaler (LOF-009 기반)
+GMM: x_f8 차분 → 연속형 7채널 → StandardScaler → PCA → Rolling 통계 (GMM-005 기반)
+rank_normalize 후 단순 평균으로 앙상블합니다.
 """
 
 from __future__ import annotations

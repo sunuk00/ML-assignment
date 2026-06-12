@@ -1,23 +1,8 @@
-"""앙상블 001: IF (Z-Score Rolling) + LOF (Rolling Stats) — Rank 평균 앙상블
+"""앙상블 001: IF + LOF — Rank 평균 앙상블
 
-모델 조합
----------
-  IF : x_f8 차분 → 연속형 z-score(W=50, shift(1)) + 이산형 rolling mean(W=50)
-       → IF-010 기반 파이프라인
-  LOF: 연속형 → rolling stats(W=30, mean/std/min/max/range) + StandardScaler
-       → LOF-009 기반 파이프라인
-
-앙상블 전략
------------
-  rank_normalize 후 단순 평균 (equal weight)
-  rank_normalize 는 score 분포 형태 무관하게 [0,1] 균일 매핑 → 이질적 모델 조합에 적합
-
-다양성 진단 출력
----------------
-  001_diversity.png       — Score 산점도 / 상관계수 / AUPR 비교 / Score KDE
-  001_score_trace.png     — val: IF / LOF / Ensemble 3행 score 추이
-  001_val_score_zoom.png  — Ensemble: 이상 구간 확대
-  001_score_hist.png      — Ensemble: score 분포 히스토그램
+IF: x_f8 차분 → 연속형 Z-Score Rolling + 이산형 Rolling Mean (IF-010 기반)
+LOF: 연속형 Rolling 통계 + StandardScaler (LOF-009 기반)
+rank_normalize 후 단순 평균으로 앙상블합니다.
 """
 
 from __future__ import annotations

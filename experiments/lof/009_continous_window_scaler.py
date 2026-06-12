@@ -1,7 +1,10 @@
-"""실험 009: LOF — Rolling Window 통계 + StandardScaler
+"""실험 009: LOF — Rolling 통계 + StandardScaler
 
-연속형 원본에 대해 Rolling Window 통계(평균/표준편차/최대/최소 등)를 계산하여
-학습 데이터 기준 StandardScaler 적용 후 LOF로 이상치 점수 산출합니다.
+연속형 채널(7개)에 Rolling 통계(mean/std/max/min/range) → StandardScaler를 적용합니다.
+이산형 채널(3개)은 포함하지 않습니다.
+LocalOutlierFactor(novelty=True)로 학습 및 추론합니다.
+
+피처 차원: 연속형 7 × 5통계 → StandardScaler
 """
 from __future__ import annotations
 from pathlib import Path

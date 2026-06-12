@@ -1,8 +1,9 @@
-"""실험 009: IF — Raw(10채널) + 007의 통계 피처 하이브리드
-현재 시점의 원본 10개 채널을 그대로 사용하고, 007에서 만든 rolling 통계(연속)과
-이산 윈도우 비율을 옆으로 concat 하여 하나의 피처 행렬로 IF에 입력합니다.
+"""실험 009: IF — Raw 원본 + Rolling 통계 하이브리드
 
-결과 (기록):
+현재 시점 모든 채널(10개) 원본값과 연속형 Rolling 통계, 이산형 Rolling Mean을 연결하여 사용합니다.
+IsolationForest로 학습 및 추론합니다.
+
+피처 차원: 10채널(raw) + 연속형 7 × 5통계 + 이산형 3(rolling mean)
 """
 
 from __future__ import annotations

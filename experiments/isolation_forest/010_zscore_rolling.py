@@ -1,18 +1,9 @@
-"""실험 010: IF — x_f8 Diff + Z-Score Rolling(W=200) + 이산형 비율
+"""실험 010: IF — x_f8 차분 + Z-Score Rolling + 이산형 Rolling Mean
 
-전처리: x_f8 채널만 diff(1).fillna(0) 적용, 나머지 9채널은 원본 유지
-Feature: 연속형 7채널 → z-score(W=200), 이산형 3채널 → rolling mean(비율)
+x_f8 채널에만 diff를 적용하고, 연속형 채널(7개)에 Z-Score Rolling을, 이산형 채널(3개)에 Rolling Mean(활성화 비율)을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
 
-설계 근거:
-기존 실험들은 rolling mean/std 절대값을 피처로 썼으나,
-절대값은 센서마다 스케일이 달라 IF의 분리 기준이 흔들릴 수 있습니다.
-z-score = (현재값 − 과거 rolling mean) / (과거 rolling std + ε) 는
-"과거 맥락 대비 현재가 얼마나 벗어났는가"를 스케일 불변 방식으로 표현하므로
-절대값 기반 피처보다 점 이상·맥락 이상 모두에 민감할 것으로 기대합니다.
-shift(1) 로 현재 시점을 계산에서 제외해 look-ahead bias를 방지합니다.
-x_f8은 장기 트렌드가 강한 채널이므로 diff()로 비정상성을 제거합니다.
-
-피처 차원: 연속형 7 × 1(z-score) + 이산형 3 × 1(ratio) = 10
+피처 차원: 연속형 7(z-score) + 이산형 3(rolling mean) = 10
 """
 
 from __future__ import annotations

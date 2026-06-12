@@ -1,7 +1,10 @@
-"""실험 008: IF — 004(rolling separated) 피처 + 채널 쌍 간의 차이(Interaction) 파생 피처 추가
-상관관계가 매우 높은 채널 쌍의 차이값을 파생변수로 추가하여 '관계 붕괴'를 직접 포착합니다.
+"""실험 008: IF — Rolling 통계 + 채널 간 상호작용 피처
 
-결과 (기록):
+연속형 Rolling 통계에 채널 쌍 간의 차이(interaction) 피처를 추가합니다.
+이산형 채널(3개)은 원본값을 사용합니다.
+IsolationForest로 학습 및 추론합니다.
+
+피처 차원: 연속형 7 × 5통계 + 이산형 3(raw) + 채널 쌍 차이
 """
 
 from __future__ import annotations

@@ -1,15 +1,9 @@
-"""실험 004: GMM — PC1·PC2만 사용 + Rolling W=200 + Skew/Kurt
+"""실험 004: GMM — PC1·PC2만 선택 + Rolling + Skewness/Kurtosis
 
-전처리: 연속형 7채널 → StandardScaler → PCA(95%) → PC1·PC2만 선택
-        → Rolling(W=200) → 7통계량(mean, std, min, max, range, skew, kurt)
-GMM(n_components=3, covariance_type='full')으로 확률 밀도를 추정합니다.
+연속형 채널(7개)에 StandardScaler → PCA 후 PC1·PC2만 선택하고, Rolling 통계(mean/std/min/max/range/skew/kurt)를 적용합니다.
+GaussianMixture로 학습 및 추론합니다.
 
-설계 근거:
-EDA(gmm_data_shape.py) 결과, PC1·PC2는 타원형 등고선으로 가우시안 가정에 부합하지만
-PC3 이후는 분포가 흩어져 노이즈에 가깝습니다.
-노이즈성 PC를 제거하고 핵심 2축만 사용하여 GMM 밀도 추정의 품질을 높이는지 확인합니다.
-
-피처 차원: 연속형 7 → Scaler → PCA → PC1·PC2 선택 → Rolling W=200 → 2 PC × 7통계
+피처 차원: 연속형 7 → StandardScaler → PCA → PC1·PC2 × 7통계
 """
 
 from __future__ import annotations
