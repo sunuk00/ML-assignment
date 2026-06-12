@@ -106,7 +106,7 @@ python final_code.py
 
 ```
 experiments/
-  isolation_forest/   # IF 실험
+  isolation_forest/    # IF 실험
   lof/                 # LOF 실험
   gmm/                 # GMM 실험
   ensemble/            # 앙상블 실험
