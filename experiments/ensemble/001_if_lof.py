@@ -432,6 +432,20 @@ if __name__ == "__main__":
         def _fmt(v): return f"{v:.4f}" if not np.isnan(v) else "  nan "
         print(f"  {type_name:<14} {_fmt(ifa):>8} {_fmt(lfa):>8} {_fmt(ensa):>10}")
 
+    print(f"\n  [Test] 유형별 AUPR")
+    print(f"  {'유형':<14} {'IF':>8} {'LOF':>8} {'Ensemble':>10}")
+    print("  " + "-" * 42)
+    for type_name, lo, hi in [
+        ("Point(1~5)", *POINT_LEN),
+        ("Contextual", *CONTEXTUAL_LEN),
+        ("Collective", *COLLECTIVE_LEN),
+    ]:
+        ifa  = anomaly_type_aupr(if_test_scores,  test_labels, lo, hi)
+        lfa  = anomaly_type_aupr(lof_test_scores, test_labels, lo, hi)
+        ensa = anomaly_type_aupr(ens_test_scores, test_labels, lo, hi)
+        def _fmt(v): return f"{v:.4f}" if not np.isnan(v) else "   nan"
+        print(f"  {type_name:<14} {_fmt(ifa):>8} {_fmt(lfa):>8} {_fmt(ensa):>10}")
+
     # ── 시각화용 점수 변환 ────────────────────────────────────────
     # 앙상블 조합은 rank 점수로 완료. 시각화 직전에만 minmax 재정규화.
     # AUPR/AUROC는 rank-based 지표이므로 변환 전후 동일.

@@ -38,7 +38,7 @@ from src.evaluate      import evaluate_aupr, evaluate_auroc, anomaly_type_aupr, 
 DATA_DIR   = ROOT_DIR / "data"
 OUTPUT_DIR = ROOT_DIR / "experiments" / "isolation_forest" / "outputs"
 
-N_ESTIMATORS  = 300
+N_ESTIMATORS  = 100
 CONTAMINATION = 0.00001
 RANDOM_STATE  = 42
 POINT_LEN      = (1,   5)

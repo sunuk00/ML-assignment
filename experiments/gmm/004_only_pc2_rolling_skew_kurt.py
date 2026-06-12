@@ -32,7 +32,7 @@ from src.evaluate      import evaluate_aupr, evaluate_auroc, anomaly_type_aupr, 
 DATA_DIR   = ROOT_DIR / "data"
 OUTPUT_DIR = ROOT_DIR / "experiments" / "gmm" / "outputs"
 
-WINDOW_SIZE     = 30
+WINDOW_SIZE     = 20
 ROLL_STATS      = ['mean', 'std', 'min', 'max', 'range', 'skew', 'kurt']
 N_PC_KEEP       = 2          # PC1·PC2만 사용
 N_COMPONENTS    = 5

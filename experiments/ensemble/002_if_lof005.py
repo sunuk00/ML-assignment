@@ -410,6 +410,20 @@ if __name__ == "__main__":
         def _fmt(v): return f"{v:.4f}" if not np.isnan(v) else "   nan"
         print(f"  {type_name:<14} {_fmt(ifa):>8} {_fmt(lfa):>9} {_fmt(ensa):>10}")
 
+    print(f"\n  [Test] 유형별 AUPR")
+    print(f"  {'유형':<14} {'IF':>8} {'LOF-005':>9} {'Ensemble':>10}")
+    print("  " + "-" * 44)
+    for type_name, lo, hi in [
+        ("Point(1~5)",  *POINT_LEN),
+        ("Contextual",  *CONTEXTUAL_LEN),
+        ("Collective",  *COLLECTIVE_LEN),
+    ]:
+        ifa  = anomaly_type_aupr(if_test_scores,  test_labels, lo, hi)
+        lfa  = anomaly_type_aupr(lof_test_scores, test_labels, lo, hi)
+        ensa = anomaly_type_aupr(ens_test_scores, test_labels, lo, hi)
+        def _fmt(v): return f"{v:.4f}" if not np.isnan(v) else "   nan"
+        print(f"  {type_name:<14} {_fmt(ifa):>8} {_fmt(lfa):>9} {_fmt(ensa):>10}")
+
     # ── 시각화용 점수 변환 ────────────────────────────────────────
     if VIZ_MINMAX:
         viz_if_val   = minmax(raw_if_val)

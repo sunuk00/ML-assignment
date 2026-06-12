@@ -1,6 +1,6 @@
-"""실험 009: LOF — Sliding Window 통계 (W=50) + StandardScaler
+"""실험 009: LOF — Rolling Window 통계 + StandardScaler
 
-연속형 원본에 대해 슬라이딩 윈도우(W=50) 통계(평균/표준편차/최대/최소 등)를 계산하여
+연속형 원본에 대해 Rolling Window 통계(평균/표준편차/최대/최소 등)를 계산하여
 학습 데이터 기준 StandardScaler 적용 후 LOF로 이상치 점수 산출합니다.
 """
 from __future__ import annotations
@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT_DIR))
 
 from src.data_loader   import load_data
 from src.preprocessing import fill_missing, fit_scaler, apply_scaler
-from src.features      import DISCRETE_COLS, window_features
+from src.features      import DISCRETE_COLS, rolling_features
 from src.models        import fit_lof
 from src.ensemble      import flip_score, rank_normalize
 from src.evaluate      import evaluate_aupr, evaluate_auroc, anomaly_type_aupr, plot_full, plot_score_hist, plot_zooms
@@ -24,7 +24,8 @@ OUTPUT_DIR = ROOT_DIR / "experiments" / "lof" / "outputs"
 
 N_NEIGHBORS   = 10
 CONTAMINATION = 0.0001
-WINDOW_SIZE    = 3
+WINDOW_SIZE    = 5
+STATS          = ['mean', 'std', 'min', 'max', 'median']
 POINT_LEN      = (1,   5)
 CONTEXTUAL_LEN = (6,   200)
 COLLECTIVE_LEN = (201, 10**9)
@@ -35,7 +36,7 @@ def minmax(arr):
 
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print("=== 009 LOF — Window Stats(Cont, W=50) + StandardScaler ===\n")
+    print("=== 009 LOF — Rolling Window Stats(Cont, W=50) + StandardScaler ===\n")
 
     # 1. 데이터 로드
     train_df, _           = load_data("train",       str(DATA_DIR))
@@ -54,10 +55,9 @@ if __name__ == "__main__":
     print(f"  연속형: {len(cont_cols)}채널 (이산형 제외)")
 
     # 4. 윈도우 통계(feature 생성) — train 기준으로 fit할 scaler는 이 DataFrame을 사용
-    stats = ["mean", "std", "min", "max", "median"]
-    train_feats = window_features(train_df, cols=cont_cols, window_size=WINDOW_SIZE, stats=stats)
-    val_feats   = window_features(val_df,   cols=cont_cols, window_size=WINDOW_SIZE, stats=stats)
-    test_feats  = window_features(test_df,  cols=cont_cols, window_size=WINDOW_SIZE, stats=stats)
+    train_feats = rolling_features(train_df, cols=cont_cols, window_size=WINDOW_SIZE, stats=STATS)
+    val_feats   = rolling_features(val_df,   cols=cont_cols, window_size=WINDOW_SIZE, stats=STATS)
+    test_feats  = rolling_features(test_df,  cols=cont_cols, window_size=WINDOW_SIZE, stats=STATS)
 
     # 5. StandardScaler (train 기준)
     scaler = fit_scaler(train_feats)
