@@ -15,4 +15,7 @@ results/202302904_*.csv
 *.joblib
 
 # 데이터
-data/
+data/train.csv
+data/val.csv
+data/test_public.csv
+data/test_hidden_no_labels.csv
