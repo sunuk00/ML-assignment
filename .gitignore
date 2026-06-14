@@ -15,4 +15,4 @@ results/202302904_*.csv
 *.joblib
 
 # 데이터 (용량 크고 공유 불필요)
-# data/
+data/
